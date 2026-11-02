@@ -94,7 +94,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🎯 <b>Your Job Alert Bot is active & tailored to your resume.</b>\n\n"
         f"📌 <b>Target Roles:</b> {', '.join(DEFAULT_ROLES[:4])}\n"
         f"📍 <b>Location:</b> {DEFAULT_LOCATION}\n"
-        f"🔍 <b>Sources:</b> LinkedIn & Indeed (Entry-Level Only)\n"
+        f"🔍 <b>Sources:</b> LinkedIn, Indeed & Glassdoor (Entry-Level Only)\n"
         f"⚡ <b>Min Match Alert:</b> {MIN_MATCH_PERCENT}%\n\n"
         f"<b>Available Commands:</b>\n"
         f"• <code>/scan</code> - Trigger a job scan right now\n"
@@ -133,7 +133,7 @@ async def scan_jobs_workflow(chat_id: str, context: ContextTypes.DEFAULT_TYPE, s
     
     await context.bot.send_message(
         chat_id=chat_id,
-        text=f"🔎 Scanning LinkedIn & Indeed for <b>Entry-Level / Junior</b> tech roles in <b>{location}</b>...",
+        text=f"🔎 Scanning LinkedIn, Indeed & Glassdoor for <b>Entry-Level / Junior</b> tech roles in <b>{location}</b>...",
         parse_mode="HTML"
     )
 

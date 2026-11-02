@@ -14,25 +14,49 @@ def make_job_id(site: str, title: str, company: str, url: str) -> str:
     return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
 def scrape_with_jobspy(search_term: str, location: str = "Philippines", results_wanted: int = 10) -> List[Dict[str, Any]]:
-    """Primary scraper using python-jobspy for LinkedIn and Indeed"""
+    """Primary scraper using python-jobspy for LinkedIn, Indeed, and Glassdoor"""
     job_results = []
     try:
         from jobspy import scrape_jobs
+        import pandas as pd
         
-        # Determine indeed country
         country_indeed = 'philippines' if 'philippines' in location.lower() or 'makati' in location.lower() or 'manila' in location.lower() else 'usa'
         
-        df = scrape_jobs(
-            site_name=DEFAULT_PLATFORMS,
-            search_term=search_term,
-            location=location,
-            results_wanted=results_wanted,
-            hours_old=72,
-            country_indeed=country_indeed
-        )
+        frames = []
         
-        if df is not None and not df.empty:
-            for _, row in df.iterrows():
+        # 1. Scrape LinkedIn and Indeed (Indeed needs country_indeed)
+        try:
+            df_main = scrape_jobs(
+                site_name=["linkedin", "indeed"],
+                search_term=search_term,
+                location=location,
+                results_wanted=results_wanted,
+                hours_old=72,
+                country_indeed=country_indeed
+            )
+            if df_main is not None and not df_main.empty:
+                frames.append(df_main)
+        except Exception as e:
+            logger.warning(f"Error scraping LinkedIn/Indeed: {e}")
+
+        # 2. Scrape Glassdoor (Glassdoor handles location without country_indeed)
+        if "glassdoor" in DEFAULT_PLATFORMS:
+            try:
+                df_gd = scrape_jobs(
+                    site_name=["glassdoor"],
+                    search_term=search_term,
+                    location=location,
+                    results_wanted=max(3, results_wanted // 2),
+                    hours_old=72
+                )
+                if df_gd is not None and not df_gd.empty:
+                    frames.append(df_gd)
+            except Exception as e:
+                logger.warning(f"Error scraping Glassdoor: {e}")
+
+        if frames:
+            combined = pd.concat(frames, ignore_index=True)
+            for _, row in combined.iterrows():
                 site = str(row.get("site", "linkedin"))
                 title = str(row.get("title", ""))
                 company = str(row.get("company", "Company"))

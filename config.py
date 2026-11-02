@@ -25,7 +25,7 @@ DEFAULT_ROLES = [
 ]
 
 # Scraping platforms: "linkedin", "indeed", "glassdoor", "zip_recruiter"
-DEFAULT_PLATFORMS = ["linkedin", "indeed"]
+DEFAULT_PLATFORMS = ["linkedin", "indeed", "glassdoor"]
 
 # Minimum match percentage to send notification
 MIN_MATCH_PERCENT = int(os.getenv("MIN_MATCH_PERCENT", "65"))

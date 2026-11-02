@@ -1,15 +1,14 @@
 # MakieJob — AI Telegram Job Matcher & Scraper Bot
 
-Personalized, AI-tailored Telegram bot that automatically searches **LinkedIn** and **Indeed**, analyzes job postings against your resume, and sends formatted alerts with match scores, tailored elevator pitches, and direct application links.
+Personalized, AI-tailored Telegram bot that automatically searches **LinkedIn**, **Indeed**, and **Glassdoor**, analyzes job postings against your resume, and sends formatted alerts with match scores, tailored elevator pitches, and direct application links.
 
 ---
 
 ## 🎯 Bot Message Appearance
-The bot mirrors the exact structure from your friend's bot:
 ```text
 🟢 [85% Match] Applications Developer
 🏢 Company: inspiro
-📍 Location: Makati, National Capital Region, Philippines | 🌐 Source: Linkedin
+📍 Location: Makati, National Capital Region, Philippines | 🌐 Source: Glassdoor
 🕒 Posted: 2026-10-31 | 🎓 Level: Entry Level / 0-1 yr (Unspecified)
 
 🛠 Stack Match: Python, REST APIs, Git, PostgreSQL
@@ -17,12 +16,13 @@ The bot mirrors the exact structure from your friend's bot:
 💡 Quick Pitch: "Highlight your backend telemetry pipelines with Python, REST APIs, and Dockerized microservices built in your Velocity Engine project to prove immediate engineering value as an Applications Developer."
 
 [ 🚀 Apply Now ↗ ]
+[ 📝 Recruiter DM ] [ ⭐ Save ] [ ✅ Applied ]
 ```
 
 ---
 
 ## ⚙️ Features
-- **Scrapes Real Listings**: Queries LinkedIn and Indeed without requiring paid accounts or API keys (using `python-jobspy` and guest endpoints).
+- **Scrapes Real Listings**: Queries **LinkedIn, Indeed, and Glassdoor** without requiring paid accounts or API keys.
 - **Personalized to Your Resume**:
   - Highlights your Computer Engineering background.
   - Matches against **Velocity Engine** (telemetry/backend/Docker), **E-Commerce QA Suite** (testing/Selenium/Postman), and **Milky Way Intern** experience.
