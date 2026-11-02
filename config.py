@@ -33,5 +33,6 @@ MIN_MATCH_PERCENT = int(os.getenv("MIN_MATCH_PERCENT", "65"))
 # Maximum jobs to send per scan
 MAX_MATCHES_PER_SCAN = 10
 
-# Background check interval in seconds (default 3 hours = 10800s)
-SCAN_INTERVAL_SECONDS = int(os.getenv("SCAN_INTERVAL_SECONDS", "10800"))
+# Scan schedule: Every 6 hours starting at 8:00 AM PHT (08:00, 14:00, 20:00, 02:00 PHT)
+SCAN_SCHEDULE_PHT_HOURS = [8, 14, 20, 2]
+SCAN_INTERVAL_SECONDS = 21600

@@ -4,7 +4,12 @@ import re
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from datetime import datetime
+from datetime import datetime, time, timedelta, timezone
+try:
+    import pytz
+    PHT_TIMEZONE = pytz.timezone("Asia/Manila")
+except Exception:
+    PHT_TIMEZONE = timezone(timedelta(hours=8))
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -75,11 +80,11 @@ def format_job_message(analyzed: dict) -> tuple[str, InlineKeyboardMarkup]:
     )
 
     keyboard = [
-        [InlineKeyboardButton("🚀 Apply Now ↗", url=url)],
+        [InlineKeyboardButton("Apply Now", url=url)],
         [
-            InlineKeyboardButton("📝 Recruiter DM", callback_data=f"dm:{job_id}"),
-            InlineKeyboardButton("⭐ Save", callback_data=f"save:{job_id}"),
-            InlineKeyboardButton("✅ Applied", callback_data=f"app:{job_id}")
+            InlineKeyboardButton("Outreach Pitch", callback_data=f"dm:{job_id}"),
+            InlineKeyboardButton("Save Job", callback_data=f"save:{job_id}"),
+            InlineKeyboardButton("Mark Applied", callback_data=f"app:{job_id}")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -95,6 +100,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📌 <b>Target Roles:</b> {', '.join(DEFAULT_ROLES[:4])}\n"
         f"📍 <b>Location:</b> {DEFAULT_LOCATION}\n"
         f"🔍 <b>Sources:</b> LinkedIn, Indeed & Glassdoor (Entry-Level Only)\n"
+        f"⏰ <b>Schedule:</b> Every 6 hours (08:00, 14:00, 20:00, 02:00 PHT)\n"
         f"⚡ <b>Min Match Alert:</b> {MIN_MATCH_PERCENT}%\n\n"
         f"<b>Available Commands:</b>\n"
         f"• <code>/scan</code> - Trigger a job scan right now\n"
@@ -254,7 +260,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📊 <b>Job Alert Bot Stats:</b>\n\n"
         f"• Total Listings Tracked: <b>{stats['total']}</b>\n"
         f"• High Match (80%+): <b>{stats['high_match']}</b>\n"
-        f"• Scan Interval: Every <b>{SCAN_INTERVAL_SECONDS // 3600} hours</b>\n"
+        f"• Scan Schedule: <b>Every 6 hours (08:00, 14:00, 20:00, 02:00 PHT)</b>\n"
         f"• Auto-Alerts: <b>{'Enabled' if AUTO_SCAN_ENABLED else 'Disabled'}</b>",
         parse_mode="HTML"
     )
@@ -298,12 +304,12 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         )
         
         reply = (
-            f"📬 <b>Recruiter Outreach Templates</b>\n"
-            f"🎯 <b>Role:</b> {job['title']} at {job['company']}\n\n"
-            f"🔗 <b>LinkedIn Connection Note</b> (under 300 chars):\n"
+            f"<b>Recruiter Outreach Templates</b>\n"
+            f"<b>Role:</b> {job['title']} at {job['company']}\n\n"
+            f"<b>LinkedIn Connection Note</b> (under 300 chars):\n"
             f"<i>Tap below to copy:</i>\n"
             f"<code>{templates['linkedin_note']}</code>\n\n"
-            f"✉️ <b>Email / Direct InMail Note:</b>\n"
+            f"<b>Email / Direct InMail Note:</b>\n"
             f"<code>{templates['email_note']}</code>"
         )
         await query.message.reply_text(reply, parse_mode="HTML")
@@ -313,8 +319,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         job = get_job_by_id(job_id)
         if job:
             track_application(job_id, job["title"], job["company"], job["url"], "saved")
-            await query.answer("⭐ Job saved to your tracker!", show_alert=False)
-            await query.message.reply_text(f"⭐ Saved <b>{job['title']} at {job['company']}</b> to your saved jobs list! View with <code>/saved</code>.", parse_mode="HTML")
+            await query.answer("Job saved to your tracker.", show_alert=False)
+            await query.message.reply_text(f"Saved <b>{job['title']} at {job['company']}</b> to your tracker. View with <code>/saved</code>.", parse_mode="HTML")
         else:
             await query.answer("Job record not found.", show_alert=True)
             
@@ -323,8 +329,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         job = get_job_by_id(job_id)
         if job:
             track_application(job_id, job["title"], job["company"], job["url"], "applied")
-            await query.answer("✅ Marked as applied! Good luck!", show_alert=False)
-            await query.message.reply_text(f"✅ Marked <b>{job['title']} at {job['company']}</b> as <b>Applied</b>! View pipeline with <code>/pipeline</code>.", parse_mode="HTML")
+            await query.answer("Marked as applied.", show_alert=False)
+            await query.message.reply_text(f"Marked <b>{job['title']} at {job['company']}</b> as <b>Applied</b>. View pipeline with <code>/pipeline</code>.", parse_mode="HTML")
         else:
             await query.answer("Job record not found.", show_alert=True)
 
@@ -332,34 +338,34 @@ async def saved_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /saved command"""
     apps = get_applications(status="saved")
     if not apps:
-        await update.message.reply_text("⭐ You have no saved jobs yet! Tap <b>[⭐ Save]</b> on any job alert to bookmark it.", parse_mode="HTML")
+        await update.message.reply_text("You have no saved jobs. Tap <b>[Save Job]</b> on any job alert to bookmark it.", parse_mode="HTML")
         return
         
-    msg = f"⭐ <b>Your Saved Jobs ({len(apps)}):</b>\n\n"
+    msg = f"<b>Your Saved Jobs ({len(apps)}):</b>\n\n"
     for i, app in enumerate(apps, 1):
-        msg += f"{i}. <b>{app['title']}</b> at {app['company']}\n🔗 <a href='{app['url']}'>Apply Link</a>\n\n"
+        msg += f"{i}. <b>{app['title']}</b> at {app['company']}\n<a href='{app['url']}'>Application Link</a>\n\n"
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 async def applied_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /applied command"""
     apps = get_applications(status="applied")
     if not apps:
-        await update.message.reply_text("📋 You haven't marked any jobs as applied yet! Tap <b>[✅ Applied]</b> on any job you submit.", parse_mode="HTML")
+        await update.message.reply_text("You have not marked any jobs as applied yet. Tap <b>[Mark Applied]</b> on any job you submit.", parse_mode="HTML")
         return
         
-    msg = f"✅ <b>Jobs You've Applied To ({len(apps)}):</b>\n\n"
+    msg = f"<b>Applications Submitted ({len(apps)}):</b>\n\n"
     for i, app in enumerate(apps, 1):
-        msg += f"{i}. <b>{app['title']}</b> at {app['company']}\n🔗 <a href='{app['url']}'>Posting</a>\n\n"
+        msg += f"{i}. <b>{app['title']}</b> at {app['company']}\n<a href='{app['url']}'>Job Posting</a>\n\n"
     await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
 
 async def pipeline_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler for /pipeline command"""
     summary = get_pipeline_summary()
     msg = (
-        f"📊 <b>Your Job Application Pipeline:</b>\n\n"
-        f"• ⭐ <b>Bookmarked / Saved:</b> {summary['saved']}\n"
-        f"• 🚀 <b>Applications Submitted:</b> {summary['applied']}\n"
-        f"• 💼 <b>Total Pipeline Tracked:</b> {summary['total']}\n\n"
+        f"<b>Job Application Pipeline:</b>\n\n"
+        f"• <b>Bookmarked / Saved:</b> {summary['saved']}\n"
+        f"• <b>Applications Submitted:</b> {summary['applied']}\n"
+        f"• <b>Total Pipeline Tracked:</b> {summary['total']}\n\n"
         f"Use <code>/saved</code> or <code>/applied</code> to view details."
     )
     await update.message.reply_text(msg, parse_mode="HTML")
@@ -411,14 +417,19 @@ def main():
     app.add_handler(CommandHandler("auto", auto_command))
     app.add_handler(CallbackQueryHandler(handle_callback_query))
 
-    # Add periodic background task
+    # Configure 6-hour interval schedule starting at 8:00 AM Philippines Time (PHT)
+    # 08:00, 14:00, 20:00, 02:00 Asia/Manila
     job_queue = app.job_queue
     if job_queue:
-        job_queue.run_repeating(
-            scheduled_scan_callback,
-            interval=SCAN_INTERVAL_SECONDS,
-            first=10 # First scan starts 10 seconds after bot boot
-        )
+        scheduled_hours = [8, 14, 20, 2]
+        for hour in scheduled_hours:
+            target_time = time(hour=hour, minute=0, second=0, tzinfo=PHT_TIMEZONE)
+            job_queue.run_daily(
+                scheduled_scan_callback,
+                time=target_time,
+                name=f"scan_pht_{hour:02d}00"
+            )
+            logger.info(f"Scheduled 6-hour scan slot registered for {hour:02d}:00 PHT")
 
     logger.info("Bot starting up...")
     app.run_polling()

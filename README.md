@@ -66,10 +66,19 @@ Open terminal in this directory:
 
 ## ⚡ Interactive Buttons Under Each Job
 Under every job alert, you now have:
-* **`[ 🚀 Apply Now ↗ ]`** — Opens the direct application page on LinkedIn or Indeed.
-* **`[ 📝 Recruiter DM ]`** — Generates a tailored, ready-to-copy LinkedIn Connection note (<300 chars) and a direct InMail/Email pitch citing your showcase projects.
-* **`[ ⭐ Save ]`** — Bookmarks the job to your `/saved` list.
-* **`[ ✅ Applied ]`** — Moves the job to your `/applied` pipeline.
+* **`[ Apply Now ]`** — Opens the direct application page on LinkedIn, Indeed, or Glassdoor.
+* **`[ Outreach Pitch ]`** — Generates a tailored, ready-to-copy LinkedIn Connection note (<300 chars) and a direct InMail/Email pitch citing your showcase projects.
+* **`[ Save Job ]`** — Bookmarks the job to your `/saved` list.
+* **`[ Mark Applied ]`** — Moves the job to your `/applied` pipeline.
+
+---
+
+## ⏰ Automated Scanning Schedule
+The bot automatically scans for new entry-level listings every **6 hours** aligned to **Philippines Time (PHT / UTC+8)**:
+* **08:00 AM PHT** (First morning scan)
+* **02:00 PM PHT** (Mid-day scan)
+* **08:00 PM PHT** (Evening scan)
+* **02:00 AM PHT** (Overnight scan)
 
 ---
 
