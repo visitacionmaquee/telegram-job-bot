@@ -2,6 +2,7 @@ import re
 import json
 import logging
 from typing import Dict, Any, List
+from datetime import datetime, date
 import requests
 from resume_profile import CANDIDATE_PROFILE
 from config import GEMINI_API_KEY
@@ -43,6 +44,54 @@ ENTRY_POSITIVE_SIGNALS = [
     r'\btrainee\b', r'\bintern\b', r'\binternship\b', r'\b0-1\b', r'\b0-2\b',
     r'\bno experience\b', r'\brecent graduate\b'
 ]
+
+def is_recent_post(date_val: Any, max_days: int = 90) -> bool:
+    """Returns True if the posting is newer than max_days (default 90 days / ~3 months)"""
+    if not date_val:
+        return True
+        
+    date_str = str(date_val).strip().lower()
+    
+    # 1. Reject year(s)
+    if "year" in date_str or ("yr" in date_str and "ago" in date_str):
+        return False
+        
+    # 2. Reject 3+ months ago
+    m_month = re.search(r'(\d+)\+?\s*month', date_str)
+    if m_month:
+        months = int(m_month.group(1))
+        if months >= 3:
+            return False
+        return True
+        
+    # 3. Reject >= 13 weeks (~90 days)
+    m_week = re.search(r'(\d+)\+?\s*week', date_str)
+    if m_week:
+        weeks = int(m_week.group(1))
+        if weeks >= 13:
+            return False
+        return True
+        
+    # 4. Reject > 90 days ago
+    m_day = re.search(r'(\d+)\+?\s*day', date_str)
+    if m_day:
+        days = int(m_day.group(1))
+        if days > max_days:
+            return False
+        return True
+        
+    # 5. Parse absolute date formats (e.g. 2026-10-31)
+    for fmt in ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%b %d, %Y", "%d %b %Y"]:
+        try:
+            parsed = datetime.strptime(date_str, fmt).date()
+            diff_days = (datetime.now().date() - parsed).days
+            if diff_days > max_days:
+                return False
+            return True
+        except ValueError:
+            continue
+
+    return True
 
 def is_junior_or_entry_level(title: str, description: str) -> bool:
     """Strictly checks if job is junior/entry-level/fresh-grad friendly"""
@@ -206,6 +255,11 @@ def analyze_job(job: Dict[str, Any]) -> Any:
     # STRICT FILTER: Eliminate every non-junior / non-entry level position
     if not is_junior_or_entry_level(title, description):
         logger.info(f"Filtered out non-junior role: '{title}' at {company}")
+        return None
+
+    # STRICT AGE FILTER: Eliminate postings older than 3 months (~90 days)
+    if not is_recent_post(date_posted, max_days=90):
+        logger.info(f"Filtered out stale posting (>3 months old): '{title}' posted '{date_posted}'")
         return None
     
     # 1. Experience Level
