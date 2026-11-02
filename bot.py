@@ -9,6 +9,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
+    CallbackQueryHandler,
     ContextTypes,
     JobQueue
 )
@@ -22,9 +23,18 @@ from config import (
     MAX_MATCHES_PER_SCAN,
     SCAN_INTERVAL_SECONDS
 )
-from database import init_db, is_job_seen, mark_job_seen, get_job_stats
+from database import (
+    init_db,
+    is_job_seen,
+    mark_job_seen,
+    get_job_stats,
+    get_job_by_id,
+    track_application,
+    get_applications,
+    get_pipeline_summary
+)
 from scraper import fetch_jobs
-from matcher import analyze_job
+from matcher import analyze_job, generate_recruiter_note
 from resume_profile import CANDIDATE_PROFILE
 
 # Configure logging
@@ -38,7 +48,7 @@ logger = logging.getLogger(__name__)
 AUTO_SCAN_ENABLED = True
 
 def format_job_message(analyzed: dict) -> tuple[str, InlineKeyboardMarkup]:
-    """Formats job analysis matching the exact screenshot structure"""
+    """Formats job analysis with direct apply, recruiter DM, and application tracking buttons"""
     badge = analyzed["badge"]
     score = analyzed["match_score"]
     title = analyzed["title"]
@@ -51,6 +61,7 @@ def format_job_message(analyzed: dict) -> tuple[str, InlineKeyboardMarkup]:
     project = analyzed["highlight_project"]
     pitch = analyzed["quick_pitch"]
     url = analyzed["job_url"]
+    job_id = analyzed.get("job_id", "")
 
     # HTML formatted message
     text = (
@@ -63,7 +74,14 @@ def format_job_message(analyzed: dict) -> tuple[str, InlineKeyboardMarkup]:
         f"💡 <b>Quick Pitch:</b> <i>\"{pitch}\"</i>"
     )
 
-    keyboard = [[InlineKeyboardButton("🚀 Apply Now ↗", url=url)]]
+    keyboard = [
+        [InlineKeyboardButton("🚀 Apply Now ↗", url=url)],
+        [
+            InlineKeyboardButton("📝 Recruiter DM", callback_data=f"dm:{job_id}"),
+            InlineKeyboardButton("⭐ Save", callback_data=f"save:{job_id}"),
+            InlineKeyboardButton("✅ Applied", callback_data=f"app:{job_id}")
+        ]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     return text, reply_markup
@@ -76,13 +94,15 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🎯 <b>Your Job Alert Bot is active & tailored to your resume.</b>\n\n"
         f"📌 <b>Target Roles:</b> {', '.join(DEFAULT_ROLES[:4])}\n"
         f"📍 <b>Location:</b> {DEFAULT_LOCATION}\n"
-        f"🔍 <b>Sources:</b> LinkedIn & Indeed\n"
+        f"🔍 <b>Sources:</b> LinkedIn & Indeed (Entry-Level Only)\n"
         f"⚡ <b>Min Match Alert:</b> {MIN_MATCH_PERCENT}%\n\n"
         f"<b>Available Commands:</b>\n"
         f"• <code>/scan</code> - Trigger a job scan right now\n"
-        f"• <code>/search &lt;role&gt; [location]</code> - Search on-demand (e.g. <code>/search python developer</code>)\n"
+        f"• <code>/search &lt;role&gt; [in &lt;loc&gt;]</code> - Search on-demand\n"
+        f"• <code>/saved</code> - View your bookmarked jobs\n"
+        f"• <code>/applied</code> - View jobs you have applied for\n"
+        f"• <code>/pipeline</code> - View your application status & statistics\n"
         f"• <code>/profile</code> - View your parsed skills & highlight projects\n"
-        f"• <code>/stats</code> - View sent and tracked job statistics\n"
         f"• <code>/auto &lt;on/off&gt;</code> - Toggle scheduled background alerts"
     )
     await update.message.reply_text(welcome_msg, parse_mode="HTML")
@@ -170,7 +190,8 @@ async def scan_jobs_workflow(chat_id: str, context: ContextTypes.DEFAULT_TYPE, s
             source=analyzed["source"],
             url=analyzed["job_url"],
             match_score=analyzed["match_score"],
-            highlight_project=analyzed["highlight_project"]
+            highlight_project=analyzed["highlight_project"],
+            stack_match=analyzed["stack_match"]
         )
         sent_count += 1
         await asyncio.sleep(1.5) # Anti-flood delay
@@ -256,6 +277,93 @@ async def auto_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Usage: <code>/auto on</code> or <code>/auto off</code>", parse_mode="HTML")
 
+async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles inline button clicks for Recruiter DM, Save, and Applied"""
+    query = update.callback_query
+    data = query.data
+    
+    if data.startswith("dm:"):
+        job_id = data.split("dm:")[1]
+        job = get_job_by_id(job_id)
+        if not job:
+            await query.answer("Job details not found in database.", show_alert=True)
+            return
+            
+        await query.answer("Generated outreach templates!")
+        templates = generate_recruiter_note(
+            job_title=job["title"],
+            company=job["company"],
+            highlight_project=job["highlight_project"],
+            stack_match=job.get("stack_match", "")
+        )
+        
+        reply = (
+            f"📬 <b>Recruiter Outreach Templates</b>\n"
+            f"🎯 <b>Role:</b> {job['title']} at {job['company']}\n\n"
+            f"🔗 <b>LinkedIn Connection Note</b> (under 300 chars):\n"
+            f"<i>Tap below to copy:</i>\n"
+            f"<code>{templates['linkedin_note']}</code>\n\n"
+            f"✉️ <b>Email / Direct InMail Note:</b>\n"
+            f"<code>{templates['email_note']}</code>"
+        )
+        await query.message.reply_text(reply, parse_mode="HTML")
+        
+    elif data.startswith("save:"):
+        job_id = data.split("save:")[1]
+        job = get_job_by_id(job_id)
+        if job:
+            track_application(job_id, job["title"], job["company"], job["url"], "saved")
+            await query.answer("⭐ Job saved to your tracker!", show_alert=False)
+            await query.message.reply_text(f"⭐ Saved <b>{job['title']} at {job['company']}</b> to your saved jobs list! View with <code>/saved</code>.", parse_mode="HTML")
+        else:
+            await query.answer("Job record not found.", show_alert=True)
+            
+    elif data.startswith("app:"):
+        job_id = data.split("app:")[1]
+        job = get_job_by_id(job_id)
+        if job:
+            track_application(job_id, job["title"], job["company"], job["url"], "applied")
+            await query.answer("✅ Marked as applied! Good luck!", show_alert=False)
+            await query.message.reply_text(f"✅ Marked <b>{job['title']} at {job['company']}</b> as <b>Applied</b>! View pipeline with <code>/pipeline</code>.", parse_mode="HTML")
+        else:
+            await query.answer("Job record not found.", show_alert=True)
+
+async def saved_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler for /saved command"""
+    apps = get_applications(status="saved")
+    if not apps:
+        await update.message.reply_text("⭐ You have no saved jobs yet! Tap <b>[⭐ Save]</b> on any job alert to bookmark it.", parse_mode="HTML")
+        return
+        
+    msg = f"⭐ <b>Your Saved Jobs ({len(apps)}):</b>\n\n"
+    for i, app in enumerate(apps, 1):
+        msg += f"{i}. <b>{app['title']}</b> at {app['company']}\n🔗 <a href='{app['url']}'>Apply Link</a>\n\n"
+    await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
+
+async def applied_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler for /applied command"""
+    apps = get_applications(status="applied")
+    if not apps:
+        await update.message.reply_text("📋 You haven't marked any jobs as applied yet! Tap <b>[✅ Applied]</b> on any job you submit.", parse_mode="HTML")
+        return
+        
+    msg = f"✅ <b>Jobs You've Applied To ({len(apps)}):</b>\n\n"
+    for i, app in enumerate(apps, 1):
+        msg += f"{i}. <b>{app['title']}</b> at {app['company']}\n🔗 <a href='{app['url']}'>Posting</a>\n\n"
+    await update.message.reply_text(msg, parse_mode="HTML", disable_web_page_preview=True)
+
+async def pipeline_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler for /pipeline command"""
+    summary = get_pipeline_summary()
+    msg = (
+        f"📊 <b>Your Job Application Pipeline:</b>\n\n"
+        f"• ⭐ <b>Bookmarked / Saved:</b> {summary['saved']}\n"
+        f"• 🚀 <b>Applications Submitted:</b> {summary['applied']}\n"
+        f"• 💼 <b>Total Pipeline Tracked:</b> {summary['total']}\n\n"
+        f"Use <code>/saved</code> or <code>/applied</code> to view details."
+    )
+    await update.message.reply_text(msg, parse_mode="HTML")
+
 async def scheduled_scan_callback(context: ContextTypes.DEFAULT_TYPE):
     """Periodic background scan executed every SCAN_INTERVAL_SECONDS"""
     if not AUTO_SCAN_ENABLED:
@@ -296,8 +404,12 @@ def main():
     app.add_handler(CommandHandler("profile", profile_command))
     app.add_handler(CommandHandler("scan", scan_command))
     app.add_handler(CommandHandler("search", search_command))
+    app.add_handler(CommandHandler("saved", saved_command))
+    app.add_handler(CommandHandler("applied", applied_command))
+    app.add_handler(CommandHandler("pipeline", pipeline_command))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("auto", auto_command))
+    app.add_handler(CallbackQueryHandler(handle_callback_query))
 
     # Add periodic background task
     job_queue = app.job_queue

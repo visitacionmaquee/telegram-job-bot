@@ -22,7 +22,19 @@ def init_db():
                 url TEXT,
                 match_score INTEGER,
                 highlight_project TEXT,
+                stack_match TEXT DEFAULT '',
                 date_saved TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS applications (
+                job_id TEXT PRIMARY KEY,
+                title TEXT,
+                company TEXT,
+                url TEXT,
+                status TEXT DEFAULT 'saved', -- 'saved', 'applied', 'interview', 'rejected'
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         conn.execute("""
@@ -46,14 +58,58 @@ def is_job_seen(job_id: str) -> bool:
     conn.close()
     return row is not None
 
-def mark_job_seen(job_id: str, title: str, company: str, location: str, source: str, url: str, match_score: int, highlight_project: str):
+def mark_job_seen(job_id: str, title: str, company: str, location: str, source: str, url: str, match_score: int, highlight_project: str, stack_match: str = ""):
     conn = get_connection()
     with conn:
         conn.execute("""
-            INSERT OR REPLACE INTO seen_jobs (job_id, title, company, location, source, url, match_score, highlight_project, date_saved)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (job_id, title, company, location, source, url, match_score, highlight_project, datetime.utcnow()))
+            INSERT OR REPLACE INTO seen_jobs (job_id, title, company, location, source, url, match_score, highlight_project, stack_match, date_saved)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (job_id, title, company, location, source, url, match_score, highlight_project, stack_match, datetime.utcnow()))
     conn.close()
+
+def get_job_by_id(job_id: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM seen_jobs WHERE job_id = ?", (job_id,))
+    row = cur.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def track_application(job_id: str, title: str, company: str, url: str, status: str):
+    conn = get_connection()
+    with conn:
+        conn.execute("""
+            INSERT INTO applications (job_id, title, company, url, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(job_id) DO UPDATE SET
+                status = excluded.status,
+                updated_at = excluded.updated_at
+        """, (job_id, title, company, url, status, datetime.utcnow(), datetime.utcnow()))
+    conn.close()
+
+def get_applications(status: str = None):
+    conn = get_connection()
+    cur = conn.cursor()
+    if status:
+        cur.execute("SELECT * FROM applications WHERE status = ? ORDER BY updated_at DESC", (status,))
+    else:
+        cur.execute("SELECT * FROM applications ORDER BY updated_at DESC")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_pipeline_summary():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT status, COUNT(*) FROM applications GROUP BY status")
+    counts = dict(cur.fetchall())
+    conn.close()
+    return {
+        "saved": counts.get("saved", 0),
+        "applied": counts.get("applied", 0),
+        "interview": counts.get("interview", 0),
+        "total": sum(counts.values())
+    }
 
 def get_job_stats():
     conn = get_connection()

@@ -55,9 +55,21 @@ Open terminal in this directory:
 | `/start` | Show welcome message and status |
 | `/scan` | Run an immediate scan of all default target roles on LinkedIn & Indeed |
 | `/search <role> [in <loc>]` | Search on demand (e.g. `/search QA Engineer in Makati` or `/search Python Developer Remote`) |
+| `/saved` | View your bookmarked jobs with application links |
+| `/applied` | View all jobs you have submitted applications to |
+| `/pipeline` | View your full job application tracker summary |
 | `/profile` | View your parsed skills and showcase projects |
 | `/stats` | View total jobs tracked and high-match count |
 | `/auto <on/off>` | Turn automatic background alerts on or off |
+
+---
+
+## ⚡ Interactive Buttons Under Each Job
+Under every job alert, you now have:
+* **`[ 🚀 Apply Now ↗ ]`** — Opens the direct application page on LinkedIn or Indeed.
+* **`[ 📝 Recruiter DM ]`** — Generates a tailored, ready-to-copy LinkedIn Connection note (<300 chars) and a direct InMail/Email pitch citing your showcase projects.
+* **`[ ⭐ Save ]`** — Bookmarks the job to your `/saved` list.
+* **`[ ✅ Applied ]`** — Moves the job to your `/applied` pipeline.
 
 ---
 

@@ -191,6 +191,46 @@ def generate_quick_pitch(job_title: str, project_name: str, matched_skills: List
     else:
         return f"Spotlight your experience modernizing user interfaces, authoring clean technical documentation, and delivering robust {skills_str} solutions to hit the ground running as a {job_title}."
 
+def generate_recruiter_note(job_title: str, company: str, highlight_project: str, stack_match: str) -> Dict[str, str]:
+    """Generates ready-to-copy recruiter outreach templates for LinkedIn & Email"""
+    project_short = highlight_project.split('—')[0].strip()
+    first_skill = stack_match.split(',')[0].strip() if stack_match else "Python"
+    
+    # 1. Short LinkedIn Connection Note (strict <= 300 chars limit)
+    linkedin_note = (
+        f"Hi! I noticed the {job_title} role at {company}. As a Computer Engineering grad "
+        f"with hands-on experience in {project_short}, I'd love to connect and discuss "
+        f"how I can contribute to your team!"
+    )
+    if len(linkedin_note) > 295:
+        linkedin_note = (
+            f"Hi! I saw the {job_title} opening at {company}. As a Computer Engineering grad "
+            f"with hands-on {first_skill} experience, I'd love to connect and discuss "
+            f"bringing value to your team!"
+        )
+
+    # 2. Detailed InMail / Email Message
+    email_note = (
+        f"Subject: Application: {job_title} — Engr. Maquee Reinhart Visitacion\n\n"
+        f"Dear Hiring Team at {company},\n\n"
+        f"I recently applied for the {job_title} position at {company} and wanted to reach out directly. "
+        f"I am a Computer Engineering graduate from Bulacan State University with hands-on experience "
+        f"engineering backend telemetry pipelines, Dockerized services, and automated QA suites ({highlight_project}).\n\n"
+        f"My background in {stack_match} aligns closely with your technical requirements, and "
+        f"I am eager to contribute immediately to {company}'s engineering objectives.\n\n"
+        f"I would welcome the opportunity to briefly speak about how my skill set fits your team's needs. "
+        f"Thank you for your time and consideration!\n\n"
+        f"Best regards,\n"
+        f"Engr. Maquee Reinhart P. Visitacion\n"
+        f"visitacionmaquee@gmail.com | (+63) 921 575 2063\n"
+        f"Pulilan, Bulacan, Philippines"
+    )
+
+    return {
+        "linkedin_note": linkedin_note,
+        "email_note": email_note
+    }
+
 def calculate_match_score(title: str, level: str, matched_skills: List[str]) -> int:
     score = 65 # Base score for relevant tech roles
     
