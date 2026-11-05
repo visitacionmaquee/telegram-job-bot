@@ -100,7 +100,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📌 <b>Target Roles:</b> {', '.join(DEFAULT_ROLES[:4])}\n"
         f"📍 <b>Location:</b> {DEFAULT_LOCATION}\n"
         f"🔍 <b>Sources:</b> LinkedIn, Indeed & Glassdoor (Entry-Level Only)\n"
-        f"⏰ <b>Schedule:</b> Every 6 hours (08:00, 14:00, 20:00, 02:00 PHT)\n"
+        f"⏰ <b>Schedule:</b> Daily at 8:00 AM PHT\n"
         f"⚡ <b>Min Match Alert:</b> {MIN_MATCH_PERCENT}%\n\n"
         f"<b>Available Commands:</b>\n"
         f"• <code>/scan</code> - Trigger a job scan right now\n"
@@ -260,7 +260,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📊 <b>Job Alert Bot Stats:</b>\n\n"
         f"• Total Listings Tracked: <b>{stats['total']}</b>\n"
         f"• High Match (80%+): <b>{stats['high_match']}</b>\n"
-        f"• Scan Schedule: <b>Every 6 hours (08:00, 14:00, 20:00, 02:00 PHT)</b>\n"
+        f"• Scan Schedule: <b>Daily at 8:00 AM PHT</b>\n"
         f"• Auto-Alerts: <b>{'Enabled' if AUTO_SCAN_ENABLED else 'Disabled'}</b>",
         parse_mode="HTML"
     )
@@ -417,19 +417,16 @@ def main():
     app.add_handler(CommandHandler("auto", auto_command))
     app.add_handler(CallbackQueryHandler(handle_callback_query))
 
-    # Configure 6-hour interval schedule starting at 8:00 AM Philippines Time (PHT)
-    # 08:00, 14:00, 20:00, 02:00 Asia/Manila
+    # Configure daily schedule at 8:00 AM Philippines Time (PHT / UTC+8)
     job_queue = app.job_queue
     if job_queue:
-        scheduled_hours = [8, 14, 20, 2]
-        for hour in scheduled_hours:
-            target_time = time(hour=hour, minute=0, second=0, tzinfo=PHT_TIMEZONE)
-            job_queue.run_daily(
-                scheduled_scan_callback,
-                time=target_time,
-                name=f"scan_pht_{hour:02d}00"
-            )
-            logger.info(f"Scheduled 6-hour scan slot registered for {hour:02d}:00 PHT")
+        target_time = time(hour=8, minute=0, second=0, tzinfo=PHT_TIMEZONE)
+        job_queue.run_daily(
+            scheduled_scan_callback,
+            time=target_time,
+            name="scan_pht_0800"
+        )
+        logger.info("Scheduled daily scan registered for 08:00 AM PHT")
 
     logger.info("Bot starting up...")
     app.run_polling()

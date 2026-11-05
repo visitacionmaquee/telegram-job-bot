@@ -74,11 +74,8 @@ Under every job alert, you now have:
 ---
 
 ## ⏰ Automated Scanning Schedule
-The bot automatically scans for new entry-level listings every **6 hours** aligned to **Philippines Time (PHT / UTC+8)**:
-* **08:00 AM PHT** (First morning scan)
-* **02:00 PM PHT** (Mid-day scan)
-* **08:00 PM PHT** (Evening scan)
-* **02:00 AM PHT** (Overnight scan)
+The bot automatically scans for new entry-level listings **once a day** at **8:00 AM Philippines Time (PHT / UTC+8)**:
+* **08:00 AM PHT** (Daily morning scan across LinkedIn, Indeed & Glassdoor)
 
 ---
 

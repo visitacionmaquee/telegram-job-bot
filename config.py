@@ -33,6 +33,6 @@ MIN_MATCH_PERCENT = int(os.getenv("MIN_MATCH_PERCENT", "65"))
 # Maximum jobs to send per scan
 MAX_MATCHES_PER_SCAN = 10
 
-# Scan schedule: Every 6 hours starting at 8:00 AM PHT (08:00, 14:00, 20:00, 02:00 PHT)
-SCAN_SCHEDULE_PHT_HOURS = [8, 14, 20, 2]
-SCAN_INTERVAL_SECONDS = 21600
+# Scan schedule: Daily at 8:00 AM PHT (08:00 Asia/Manila)
+SCAN_SCHEDULE_PHT_HOURS = [8]
+SCAN_INTERVAL_SECONDS = 86400
