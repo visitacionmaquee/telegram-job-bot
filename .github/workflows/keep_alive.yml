@@ -1,0 +1,13 @@
+name: Keep Render Bot Awake
+on:
+  schedule:
+    # Runs every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Web Service
+        run: curl -s "https://makie-job-bot.onrender.com"
