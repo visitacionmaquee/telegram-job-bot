@@ -429,7 +429,7 @@ def main():
         logger.info("Scheduled daily scan registered for 08:00 AM PHT")
 
     logger.info("Bot starting up...")
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
