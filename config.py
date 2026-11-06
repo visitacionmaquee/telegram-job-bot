@@ -6,8 +6,8 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 # Telegram Bot Credentials
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "9171074042:AAFR3LPksGTaKGvmMfln-roD5y1Br2r1d8Q")
-TELEGRAM_USER_ID = os.getenv("TELEGRAM_USER_ID", "8880104517")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_USER_ID = os.getenv("TELEGRAM_USER_ID")
 
 # Optional Gemini API Key for AI synthesis (falls back to built-in smart engine if blank)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
