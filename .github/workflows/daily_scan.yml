@@ -1,0 +1,40 @@
+name: Daily 8:00 AM Job Scan
+
+on:
+  schedule:
+    # 00:00 UTC = 08:00 AM Philippines Time (PHT / UTC+8)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub Web / Mobile!
+
+jobs:
+  job-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Restore Deduplication Database
+        uses: actions/cache@v4
+        with:
+          path: jobs.db
+          key: jobs-db-${{ github.run_id }}
+          restore-keys: |
+            jobs-db-
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Job Scan
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_USER_ID: ${{ secrets.TELEGRAM_USER_ID }}
+        run: python daily_scan.py
