@@ -109,19 +109,44 @@ def trigger_job_scan_async(
     """
     Enqueues an asynchronous background job scan using Celery & Redis.
     Instantly returns a task_id that can be polled via /api/v1/tasks/{task_id}.
+    Gracefully handles environments without active Redis daemon by running in a background worker thread.
     """
+    import uuid
+    from threading import Thread
+    from api.celery_app import is_redis_online
     from api.tasks.scraping_tasks import async_scrape_and_match
 
-    task = async_scrape_and_match.delay(
-        user_id=user_id,
-        role=role,
-        location=location,
-        notify_telegram=notify_telegram
-    )
+    task_id = str(uuid.uuid4())
+
+    if is_redis_online:
+        task = async_scrape_and_match.apply_async(
+            kwargs={
+                "user_id": user_id,
+                "role": role,
+                "location": location,
+                "notify_telegram": notify_telegram
+            },
+            task_id=task_id
+        )
+    else:
+        thread = Thread(
+            target=async_scrape_and_match.apply,
+            kwargs={
+                "kwargs": {
+                    "user_id": user_id,
+                    "role": role,
+                    "location": location,
+                    "notify_telegram": notify_telegram
+                },
+                "task_id": task_id
+            },
+            daemon=True
+        )
+        thread.start()
 
     return {
-        "task_id": task.id,
+        "task_id": task_id,
         "status": "QUEUED",
         "message": "Background job scan enqueued successfully.",
-        "poll_url": f"/api/v1/tasks/{task.id}"
+        "poll_url": f"/api/v1/tasks/{task_id}"
     }
