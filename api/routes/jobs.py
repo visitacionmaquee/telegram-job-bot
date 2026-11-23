@@ -98,3 +98,30 @@ def trigger_job_scan(
     # Sort descending by match score
     matched_results.sort(key=lambda x: x["match_score"], reverse=True)
     return matched_results[:10]
+
+@router.post("/scan-async")
+def trigger_job_scan_async(
+    user_id: Optional[int] = None,
+    role: Optional[str] = None,
+    location: Optional[str] = None,
+    notify_telegram: bool = True
+):
+    """
+    Enqueues an asynchronous background job scan using Celery & Redis.
+    Instantly returns a task_id that can be polled via /api/v1/tasks/{task_id}.
+    """
+    from api.tasks.scraping_tasks import async_scrape_and_match
+
+    task = async_scrape_and_match.delay(
+        user_id=user_id,
+        role=role,
+        location=location,
+        notify_telegram=notify_telegram
+    )
+
+    return {
+        "task_id": task.id,
+        "status": "QUEUED",
+        "message": "Background job scan enqueued successfully.",
+        "poll_url": f"/api/v1/tasks/{task.id}"
+    }

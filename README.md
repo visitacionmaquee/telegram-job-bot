@@ -33,19 +33,26 @@ A cloud-native SaaS and automation platform built for software engineers, fresh 
    * **PostgreSQL / SQLAlchemy ORM**: Multi-user models with automatic SQLite fallback for local development.
    * **Interactive Swagger UI**: Explore and test live API endpoints at `http://localhost:8000/docs`.
 
-2. **Core Endpoints**:
+2. **Asynchronous Task Queue (Celery + Redis)**:
+   * **Decoupled Job Scraping**: Offloads long-running web scraping across LinkedIn, Indeed & Glassdoor to background Celery workers.
+   * `POST /api/v1/jobs/scan-async` — Enqueues background scraping task, returns immediate task ID.
+   * `GET /api/v1/tasks/{task_id}` — Polls task progress, execution state (`PENDING`, `PROGRESS`, `SUCCESS`), and result payload.
+
+3. **Core Endpoints**:
    * `GET /health` — Real-time API & database connectivity check.
    * `POST /api/v1/users` — User onboarding and subscription tiering.
    * `PUT /api/v1/users/{id}/profile` — Candidate resume skills & target roles configuration.
    * `GET /api/v1/jobs` & `POST /api/v1/jobs/scan` — Job catalog querying & scraper trigger.
+   * `POST /api/v1/jobs/scan-async` — Asynchronous background scan trigger.
+   * `GET /api/v1/tasks/{task_id}` — Asynchronous task status poller.
    * `GET /api/v1/applications/pipeline-stats` — Kanban tracker summary (`saved`, `applied`, `interview`, `offer`).
 
-3. **IaaS & Containerization Ready**:
-   * **Docker Compose**: Single-command startup of PostgreSQL 16 + FastAPI Backend + Bot Worker (`docker compose up --build`).
+4. **IaaS & Containerization Ready**:
+   * **Docker Compose**: Single-command startup of PostgreSQL 16 + Redis 7 + Celery Worker + FastAPI Backend + Bot Worker (`docker compose up --build`).
    * **Oracle Cloud (OCI) Ready**: Configured for deployment on Oracle Cloud Always-Free Compute instances.
 
-4. **Automated CI/CD Pipeline (`.github/workflows/ci.yml`)**:
-   * Automated syntax validation, code integrity, and `pytest` test suite on every git push.
+5. **Automated CI/CD Pipeline (`.github/workflows/ci.yml`)**:
+   * Automated syntax validation, code integrity, and 11-test `pytest` test suite on every git push.
    * Automated Docker container build validation.
 
 ---

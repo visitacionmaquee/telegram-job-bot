@@ -29,7 +29,7 @@ jobs:
       - name: Code Syntax & Integrity Check
         run: |
           python -m py_compile bot.py matcher.py scraper.py config.py database.py daily_scan.py
-          python -m py_compile api/main.py api/database.py api/models.py api/schemas.py api/services/matcher_service.py
+          python -m py_compile api/main.py api/database.py api/models.py api/schemas.py api/services/matcher_service.py api/celery_app.py api/tasks/scraping_tasks.py api/routes/tasks.py
 
       - name: Run Pytest Test Suite
         run: |
