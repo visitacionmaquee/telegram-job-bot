@@ -1,0 +1,55 @@
+name: JobRadar AI — CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Automated Tests & Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Code Syntax & Integrity Check
+        run: |
+          python -m py_compile bot.py matcher.py scraper.py config.py database.py daily_scan.py
+          python -m py_compile api/main.py api/database.py api/models.py api/schemas.py api/services/matcher_service.py
+
+      - name: Run Pytest Test Suite
+        run: |
+          pytest -v
+
+  build-docker:
+    name: Validate Docker Container Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: jobradar-ai:latest

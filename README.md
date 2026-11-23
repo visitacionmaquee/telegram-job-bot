@@ -1,66 +1,89 @@
-# MakieJob — AI Telegram Job Matcher & Scraper Bot
+# JobRadar AI — Multi-Tenant AI Job Scraping & Career Intelligence SaaS
 
-Personalized, AI-tailored Telegram bot that automatically searches **LinkedIn**, **Indeed**, and **Glassdoor**, analyzes job postings against your resume, and sends formatted alerts with match scores, tailored elevator pitches, and direct application links.
+A cloud-native SaaS and automation platform built for software engineers, fresh graduates, and tech job seekers. Features automated scrapers for **LinkedIn, Indeed, and Glassdoor**, an AI-powered resume matching engine, a full **FastAPI** backend, and an interactive **Telegram Bot**.
 
 ---
 
-## 🎯 Bot Message Appearance
-```text
-🟢 [85% Match] Applications Developer
-🏢 Company: inspiro
-📍 Location: Makati, National Capital Region, Philippines | 🌐 Source: Glassdoor
-🕒 Posted: 2026-10-31 | 🎓 Level: Entry Level / 0-1 yr (Unspecified)
+## 🏗 System Architecture
 
-🛠 Stack Match: Python, REST APIs, Git, PostgreSQL
-🏆 Highlight Project: Velocity Engine — Hardware Telemetry & Observability Platform
-💡 Quick Pitch: "Highlight your backend telemetry pipelines with Python, REST APIs, and Dockerized microservices built in your Velocity Engine project to prove immediate engineering value as an Applications Developer."
-
-[ 🚀 Apply Now ↗ ]
-[ 📝 Recruiter DM ] [ ⭐ Save ] [ ✅ Applied ]
+```
+                                  [ Web Dashboard / Users ]
+                                             │
+                                             ▼
+                                  ┌─────────────────────┐
+                                  │   FastAPI Backend   │
+                                  │   (RESTful API)     │
+                                  └──────────┬──────────┘
+                                             │
+                      ┌──────────────────────┼──────────────────────┐
+                      ▼                      ▼                      ▼
+            ┌──────────────────┐   ┌───────────────────┐  ┌──────────────────┐
+            │ PostgreSQL DB    │   │ Multi-Board       │  │ Telegram Bot &   │
+            │ (Users, Profile, │   │ Scraper Engine    │  │ Async Notifier   │
+            │  Jobs, Kanban)   │   │ (LinkedIn/Indeed) │  │ (Instant Alerts) │
+            └──────────────────┘   └───────────────────┘  └──────────────────┘
 ```
 
 ---
 
-## ⚙️ Features
-- **Scrapes Real Listings**: Queries **LinkedIn, Indeed, and Glassdoor** without requiring paid accounts or API keys.
-- **Personalized to Your Resume**:
-  - Highlights your Computer Engineering background.
-  - Matches against **Velocity Engine** (telemetry/backend/Docker), **E-Commerce QA Suite** (testing/Selenium/Postman), and **Milky Way Intern** experience.
-- **Deduplication Engine**: Backed by SQLite so you never get notified of the same listing twice.
-- **Scheduled Alerts**: Automatically scans in the background every few hours.
-- **On-Demand Search**: Query any role or location instantly via Telegram commands.
+## 🚀 Key Modules & Capabilities
+
+1. **Multi-Tenant RESTful API (`api/`)**:
+   * **FastAPI Backend**: Structured under modern clean architecture (`routes`, `models`, `schemas`, `services`).
+   * **PostgreSQL / SQLAlchemy ORM**: Multi-user models with automatic SQLite fallback for local development.
+   * **Interactive Swagger UI**: Explore and test live API endpoints at `http://localhost:8000/docs`.
+
+2. **Core Endpoints**:
+   * `GET /health` — Real-time API & database connectivity check.
+   * `POST /api/v1/users` — User onboarding and subscription tiering.
+   * `PUT /api/v1/users/{id}/profile` — Candidate resume skills & target roles configuration.
+   * `GET /api/v1/jobs` & `POST /api/v1/jobs/scan` — Job catalog querying & scraper trigger.
+   * `GET /api/v1/applications/pipeline-stats` — Kanban tracker summary (`saved`, `applied`, `interview`, `offer`).
+
+3. **IaaS & Containerization Ready**:
+   * **Docker Compose**: Single-command startup of PostgreSQL 16 + FastAPI Backend + Bot Worker (`docker compose up --build`).
+   * **Oracle Cloud (OCI) Ready**: Configured for deployment on Oracle Cloud Always-Free Compute instances.
+
+4. **Automated CI/CD Pipeline (`.github/workflows/ci.yml`)**:
+   * Automated syntax validation, code integrity, and `pytest` test suite on every git push.
+   * Automated Docker container build validation.
 
 ---
 
-## 🚀 How to Run the Bot
+## 💻 Quickstart (Local Development)
 
-### Option 1: Quick Launcher (Windows)
-Double-click:
-```
-run_bot.bat
-```
-
-### Option 2: Command Line
-Open terminal in this directory:
+### 1. Run the FastAPI Backend
 ```bash
-.venv\Scripts\python.exe bot.py
+uvicorn api.main:app --reload --port 8000
+```
+Open your browser and navigate to:
+* **Interactive API Docs**: `http://127.0.0.1:8000/docs`
+* **Health Check**: `http://127.0.0.1:8000/health`
+
+### 2. Run the Full Stack with Docker Compose
+```bash
+docker compose up -d --build
+```
+
+### 3. Run Automated Tests
+```bash
+pytest -v
 ```
 
 ---
 
-## 📱 Bot Commands
+## 📱 Bot Commands (Telegram)
 
 | Command | Description |
 | :--- | :--- |
 | `/start` | Show welcome message and status |
-| `/scan` | Run an immediate scan of all default target roles on LinkedIn & Indeed |
-| `/search <role> [in <loc>]` | Search on demand (e.g. `/search QA Engineer in Makati` or `/search Python Developer Remote`) |
+| `/scan` | Run an immediate scan across LinkedIn, Indeed & Glassdoor |
+| `/search <role> [in <loc>]` | Search on demand (e.g. `/search QA Engineer in Makati`) |
 | `/saved` | View your bookmarked jobs with application links |
 | `/applied` | View all jobs you have submitted applications to |
 | `/pipeline` | View your full job application tracker summary |
 | `/profile` | View your parsed skills and showcase projects |
 | `/stats` | View total jobs tracked and high-match count |
-| `/auto <on/off>` | Turn automatic background alerts on or off |
 
 ---
 

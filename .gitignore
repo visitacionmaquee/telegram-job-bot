@@ -2,5 +2,6 @@
 __pycache__/
 *.pyc
 .env
-jobs.db
+*.db
+.pytest_cache/
 *.log
