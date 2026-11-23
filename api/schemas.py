@@ -21,6 +21,7 @@ class UserResponse(UserBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    profile: Optional['ProfileResponse'] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -47,6 +48,8 @@ class ProfileResponse(ProfileBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+UserResponse.model_rebuild()
 
 # ----------------- Job Schemas -----------------
 class JobBase(BaseModel):

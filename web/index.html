@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobRadar AI — Career Pipeline & Kanban Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .kanban-col::-webkit-scrollbar { width: 6px; }
+    .kanban-col::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 4px; }
+    .kanban-col::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
+    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .animate-pulse-slow { animation: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- ================= TOP NAVIGATION ================= -->
+  <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Brand -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+              JobRadar AI
+            </span>
+            <span class="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              SaaS v1.0
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Multi-Tenant Career Pipeline & AI Recruiter</p>
+        </div>
+      </div>
+
+      <!-- System Health Indicator -->
+      <div class="hidden md:flex items-center space-x-4 bg-slate-800/50 border border-slate-700/60 rounded-full px-3.5 py-1 text-xs">
+        <span class="flex items-center space-x-1.5 text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span class="font-medium">FastAPI Engine</span>
+        </span>
+        <span class="text-slate-600">|</span>
+        <span class="flex items-center space-x-1.5 text-cyan-400">
+          <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+          <span class="font-medium">Celery Async</span>
+        </span>
+        <span class="text-slate-600">|</span>
+        <span class="flex items-center space-x-1.5 text-indigo-400">
+          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+          <span class="font-medium">Telegram Bot</span>
+        </span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-3">
+        <button id="btn-open-scan" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all transform active:scale-95">
+          <svg class="w-4 h-4 animate-spin hidden" id="scan-btn-spinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <svg class="w-4 h-4" id="scan-btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+          </svg>
+          <span>Run AI Scan</span>
+        </button>
+
+        <button id="btn-open-profile" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span class="hidden sm:inline" id="nav-user-name">Engr. Maquee</span>
+        </button>
+
+        <a href="/docs" target="_blank" class="p-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-slate-200 border border-slate-700/60 transition" title="Open Swagger API Docs">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTENT CONTAINER ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- USER SUMMARY & METRICS CARDS -->
+    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      <!-- Total Applications -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+        <div class="text-xs font-medium text-slate-400">Total Tracked</div>
+        <div class="text-2xl font-bold text-white mt-1" id="stat-total">0</div>
+        <div class="text-[11px] text-slate-500 mt-1 flex items-center space-x-1">
+          <span>Active Pipeline</span>
+        </div>
+      </div>
+      <!-- Saved / Matched -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+        <div class="text-xs font-medium text-amber-400">Matched / Saved</div>
+        <div class="text-2xl font-bold text-amber-300 mt-1" id="stat-saved">0</div>
+        <div class="text-[11px] text-slate-500 mt-1">Ready for Review</div>
+      </div>
+      <!-- Applied -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+        <div class="text-xs font-medium text-sky-400">Applied</div>
+        <div class="text-2xl font-bold text-sky-300 mt-1" id="stat-applied">0</div>
+        <div class="text-[11px] text-slate-500 mt-1">Submitted Resumes</div>
+      </div>
+      <!-- Interviewing -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+        <div class="text-xs font-medium text-purple-400">Interviewing</div>
+        <div class="text-2xl font-bold text-purple-300 mt-1" id="stat-interview">0</div>
+        <div class="text-[11px] text-slate-500 mt-1">Screen / Technical</div>
+      </div>
+      <!-- Offers -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+        <div class="text-xs font-medium text-emerald-400">Offer Received</div>
+        <div class="text-2xl font-bold text-emerald-300 mt-1" id="stat-offer">0</div>
+        <div class="text-[11px] text-slate-500 mt-1">Hired & Final Stage</div>
+      </div>
+      <!-- Match Threshold -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+        <div class="text-xs font-medium text-teal-400">AI Match Floor</div>
+        <div class="text-2xl font-bold text-teal-300 mt-1" id="stat-min-match">65%</div>
+        <div class="text-[11px] text-slate-500 mt-1">Quality Gate</div>
+      </div>
+    </section>
+
+    <!-- ASYNC SCANNING REAL-TIME BANNER (Shown during background task) -->
+    <div id="scan-progress-banner" class="hidden bg-gradient-to-r from-emerald-950/80 via-teal-950/80 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <span class="font-semibold text-sm text-emerald-200" id="scan-banner-status">AI Scraper Worker running in background...</span>
+        </div>
+        <span class="text-xs font-mono text-emerald-400" id="scan-banner-percent">25%</span>
+      </div>
+      <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+        <div id="scan-progress-fill" class="bg-gradient-to-r from-emerald-400 to-cyan-400 h-2 rounded-full transition-all duration-300" style="width: 25%"></div>
+      </div>
+      <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+        <span id="scan-banner-details">Querying LinkedIn & Indeed APIs...</span>
+        <span id="scan-banner-task-id" class="text-slate-500 truncate max-w-xs">Task ID: --</span>
+      </div>
+    </div>
+
+    <!-- SEARCH & CONTROLS TOOLBAR -->
+    <section class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/40 p-3 rounded-2xl border border-slate-800">
+      <div class="flex-1 flex items-center space-x-3">
+        <!-- Search -->
+        <div class="relative flex-1">
+          <svg class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="input-search" placeholder="Filter by job title, company, or tech stack..." class="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+        </div>
+        
+        <!-- Platform filter -->
+        <select id="select-platform" class="bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-emerald-500">
+          <option value="all">All Sources</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="indeed">Indeed</option>
+          <option value="glassdoor">Glassdoor</option>
+        </select>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button id="btn-refresh-board" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Refresh Pipeline">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ================= 5-COLUMN KANBAN BOARD ================= -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-start min-h-[550px]">
+      
+      <!-- 1. MATCHED / SAVED -->
+      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span class="font-semibold text-sm text-slate-200">Matched / Saved</span>
+          </div>
+          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-amber-400" id="count-saved">0</span>
+        </div>
+        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-saved">
+          <div class="text-center py-10 text-xs text-slate-500">No jobs saved yet. Click "Run AI Scan" to discover positions!</div>
+        </div>
+      </div>
+
+      <!-- 2. APPLIED -->
+      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+            <span class="font-semibold text-sm text-slate-200">Applied</span>
+          </div>
+          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-sky-400" id="count-applied">0</span>
+        </div>
+        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-applied">
+          <div class="text-center py-10 text-xs text-slate-500">No active applications. Move jobs here once submitted.</div>
+        </div>
+      </div>
+
+      <!-- 3. INTERVIEWING -->
+      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+            <span class="font-semibold text-sm text-slate-200">Interviewing</span>
+          </div>
+          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-purple-400" id="count-interview">0</span>
+        </div>
+        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-interview">
+          <div class="text-center py-10 text-xs text-slate-500">No interviews scheduled. Good luck!</div>
+        </div>
+      </div>
+
+      <!-- 4. OFFER RECEIVED -->
+      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span class="font-semibold text-sm text-slate-200">Offer Received</span>
+          </div>
+          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-emerald-400" id="count-offer">0</span>
+        </div>
+        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-offer">
+          <div class="text-center py-10 text-xs text-slate-500">Target zone! Job offers will show here.</div>
+        </div>
+      </div>
+
+      <!-- 5. REJECTED / ARCHIVED -->
+      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+            <span class="font-semibold text-sm text-slate-400">Archived</span>
+          </div>
+          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-slate-400" id="count-rejected">0</span>
+        </div>
+        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-rejected">
+          <div class="text-center py-10 text-xs text-slate-500">Archived or rejected records.</div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= RUN SCAN MODAL ================= -->
+  <div id="modal-scan" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-100">Launch AI Job Radar Scan</h3>
+        </div>
+        <button id="btn-close-scan-modal" class="text-slate-400 hover:text-slate-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Target Role</label>
+          <input type="text" id="scan-input-role" value="Junior Software Engineer" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+          <p class="text-[11px] text-slate-500 mt-1">E.g., Junior Software Engineer, Junior QA Engineer, Junior Python Developer</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Location</label>
+          <input type="text" id="scan-input-location" value="Philippines" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="flex items-center space-x-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+          <input type="checkbox" id="scan-check-telegram" checked class="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 bg-slate-900 border-slate-700">
+          <label for="scan-check-telegram" class="text-xs text-slate-300">
+            Dispatch top matches directly to Telegram (<span class="text-emerald-400 font-mono">Chat ID: 8880104517</span>)
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+        <button id="btn-cancel-scan-modal" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Cancel</button>
+        <button id="btn-submit-scan" class="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 transition">
+          Enqueue Celery Task
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CANDIDATE PROFILE MODAL ================= -->
+  <div id="modal-profile" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="p-2 rounded-xl bg-teal-500/10 text-teal-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-100" id="profile-modal-name">Candidate Profile</h3>
+            <p class="text-xs text-slate-400" id="profile-modal-email">visitacionmaquee@gmail.com</p>
+          </div>
+        </div>
+        <button id="btn-close-profile-modal" class="text-slate-400 hover:text-slate-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Headline</label>
+          <input type="text" id="prof-headline" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Target Roles (Comma-separated)</label>
+          <input type="text" id="prof-roles" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-teal-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Skills (Comma-separated)</label>
+          <textarea id="prof-skills" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-teal-500"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Location</label>
+            <input type="text" id="prof-location" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-teal-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Min Match Score (%)</label>
+            <input type="number" id="prof-min-score" min="50" max="95" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-teal-500">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+        <button id="btn-cancel-profile-modal" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Cancel</button>
+        <button id="btn-save-profile" class="px-5 py-2 rounded-xl text-sm font-semibold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-500/20 transition">
+          Save Profile
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= AI OUTREACH PITCH MODAL ================= -->
+  <div id="modal-pitch" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-100" id="pitch-modal-title">AI Recruiter Outreach</h3>
+            <p class="text-xs text-slate-400" id="pitch-modal-company">Company</p>
+          </div>
+        </div>
+        <button id="btn-close-pitch-modal" class="text-slate-400 hover:text-slate-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-sm">
+        <!-- Quick Pitch -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tailored Elevator Pitch</label>
+          <div id="pitch-modal-pitch" class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 text-xs leading-relaxed"></div>
+        </div>
+
+        <!-- LinkedIn Note -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold text-sky-400 uppercase tracking-wider">LinkedIn Connection Request (300 chars)</label>
+            <button id="btn-copy-linkedin" class="text-xs text-sky-400 hover:text-sky-300 font-medium">Copy Note</button>
+          </div>
+          <div id="pitch-modal-linkedin" class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 text-xs leading-relaxed font-mono"></div>
+        </div>
+
+        <!-- Cold Email -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Cold Email Outreach</label>
+            <button id="btn-copy-email" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Copy Email</button>
+          </div>
+          <div id="pitch-modal-email" class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 text-xs leading-relaxed font-mono whitespace-pre-line"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end pt-3 border-t border-slate-800">
+        <button id="btn-dismiss-pitch-modal" class="px-5 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TOAST NOTIFICATION ================= -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 border border-emerald-500/40 text-slate-200 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 flex items-center space-x-3 text-sm">
+    <span class="text-emerald-400">✓</span>
+    <span id="toast-message">Notification</span>
+  </div>
+
+  <!-- ================= DASHBOARD APP LOGIC ================= -->
+  <script>
+    let currentUser = null;
+    let allApplications = [];
+    let pollingInterval = null;
+
+    // Toast helper
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    // Initialize User & Pipeline
+    async function init() {
+      try {
+        const userRes = await fetch('/api/v1/users/default');
+        if (userRes.ok) {
+          currentUser = await userRes.json();
+          document.getElementById('nav-user-name').textContent = currentUser.full_name.split(' ')[0] + ' ' + (currentUser.full_name.split(' ')[1] || '');
+          if (currentUser.profile && currentUser.profile.min_match_percent) {
+            document.getElementById('stat-min-match').textContent = currentUser.profile.min_match_percent + '%';
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching default user:', err);
+      }
+
+      await loadBoard();
+    }
+
+    // Fetch and render applications
+    async function loadBoard() {
+      if (!currentUser) return;
+      try {
+        const res = await fetch(`/api/v1/applications?user_id=${currentUser.id}`);
+        if (!res.ok) return;
+        allApplications = await res.json();
+        renderKanban(allApplications);
+        updateStats();
+      } catch (err) {
+        console.error('Error loading applications:', err);
+      }
+    }
+
+    // Render applications into 5 Kanban columns
+    function renderKanban(apps) {
+      const search = document.getElementById('input-search').value.toLowerCase();
+      const platform = document.getElementById('select-platform').value;
+
+      const filtered = apps.filter(app => {
+        const job = app.job || {};
+        const titleMatch = (job.title || '').toLowerCase().includes(search);
+        const compMatch = (job.company || '').toLowerCase().includes(search);
+        const stackMatch = (app.highlight_project || '').toLowerCase().includes(search);
+        const matchesSearch = titleMatch || compMatch || stackMatch;
+
+        const matchesPlatform = platform === 'all' || (job.source || '').toLowerCase() === platform.toLowerCase();
+        return matchesSearch && matchesPlatform;
+      });
+
+      const cols = {
+        saved: document.getElementById('col-saved'),
+        applied: document.getElementById('col-applied'),
+        interview: document.getElementById('col-interview'),
+        offer: document.getElementById('col-offer'),
+        rejected: document.getElementById('col-rejected')
+      };
+
+      const counts = { saved: 0, applied: 0, interview: 0, offer: 0, rejected: 0 };
+
+      // Clear columns
+      Object.keys(cols).forEach(k => cols[k].innerHTML = '');
+
+      filtered.forEach(app => {
+        const status = (app.status || 'saved').toLowerCase();
+        if (cols[status]) {
+          counts[status]++;
+          cols[status].appendChild(createCard(app));
+        }
+      });
+
+      // Update column badges
+      Object.keys(counts).forEach(k => {
+        const badge = document.getElementById(`count-${k}`);
+        if (badge) badge.textContent = counts[k];
+        if (counts[k] === 0) {
+          cols[k].innerHTML = `<div class="text-center py-10 text-xs text-slate-500">No jobs in this column</div>`;
+        }
+      });
+    }
+
+    // Create a Kanban card element
+    function createCard(app) {
+      const job = app.job || {};
+      const card = document.createElement('div');
+      card.className = "bg-slate-950 border border-slate-800 hover:border-slate-700/80 rounded-xl p-3.5 space-y-3 shadow-md hover:shadow-lg transition group";
+
+      // Score badge color
+      const score = app.match_score || 70;
+      let scoreBadge = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+      if (score < 75) scoreBadge = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      if (score < 65) scoreBadge = "bg-slate-500/10 text-slate-400 border-slate-500/20";
+
+      // Platform badge
+      const src = (job.source || 'linkedin').toLowerCase();
+      let srcBadge = "bg-blue-500/10 text-blue-400";
+      if (src.includes('indeed')) srcBadge = "bg-indigo-500/10 text-indigo-400";
+      if (src.includes('glassdoor')) srcBadge = "bg-emerald-500/10 text-emerald-400";
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div class="space-y-1">
+            <h4 class="font-semibold text-sm text-slate-100 group-hover:text-emerald-400 transition leading-snug">
+              ${job.title || 'Software Position'}
+            </h4>
+            <div class="text-xs text-slate-400 flex items-center space-x-1.5">
+              <span class="font-medium text-slate-300">${job.company || 'Tech Company'}</span>
+              <span>•</span>
+              <span class="text-slate-500">${job.location || 'Philippines'}</span>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 text-xs font-mono font-bold rounded-lg border ${scoreBadge} shrink-0">
+            ${score}%
+          </span>
+        </div>
+
+        ${app.highlight_project ? `
+          <div class="text-[11px] bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-md text-slate-400 truncate">
+            🎯 <span class="text-slate-300">${app.highlight_project.split('—')[0]}</span>
+          </div>
+        ` : ''}
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-900 text-xs">
+          <div class="flex items-center space-x-1.5">
+            <span class="px-1.5 py-0.5 text-[10px] font-medium rounded uppercase tracking-wider ${srcBadge}">${job.source || 'Job'}</span>
+            ${job.url ? `<a href="${job.url}" target="_blank" class="text-slate-500 hover:text-slate-300" title="Open Job Posting">↗</a>` : ''}
+          </div>
+
+          <!-- Quick Move Dropdown -->
+          <div class="flex items-center space-x-1">
+            <button class="btn-pitch px-2 py-1 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-[11px] font-medium transition" title="View AI Outreach Pitch">
+              AI Pitch
+            </button>
+            <select class="select-move bg-slate-900 border border-slate-800 text-[11px] text-slate-300 rounded-md px-1.5 py-1 focus:outline-none">
+              <option value="saved" ${app.status === 'saved' ? 'selected' : ''}>Saved</option>
+              <option value="applied" ${app.status === 'applied' ? 'selected' : ''}>Applied</option>
+              <option value="interview" ${app.status === 'interview' ? 'selected' : ''}>Interview</option>
+              <option value="offer" ${app.status === 'offer' ? 'selected' : ''}>Offer</option>
+              <option value="rejected" ${app.status === 'rejected' ? 'selected' : ''}>Archive</option>
+            </select>
+            <button class="btn-delete text-slate-600 hover:text-red-400 p-1" title="Delete application">×</button>
+          </div>
+        </div>
+      `;
+
+      // Event listener: Status move
+      const moveSelect = card.querySelector('.select-move');
+      moveSelect.addEventListener('change', async (e) => {
+        const newStatus = e.target.value;
+        try {
+          const res = await fetch(`/api/v1/applications/${app.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+          });
+          if (res.ok) {
+            app.status = newStatus;
+            showToast(`Moved to ${newStatus.toUpperCase()}`);
+            renderKanban(allApplications);
+            updateStats();
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      // Event listener: AI Pitch modal
+      card.querySelector('.btn-pitch').addEventListener('click', () => {
+        openPitchModal(app);
+      });
+
+      // Event listener: Delete card
+      card.querySelector('.btn-delete').addEventListener('click', async () => {
+        if (!confirm('Remove this application from tracking?')) return;
+        try {
+          const res = await fetch(`/api/v1/applications/${app.id}`, { method: 'DELETE' });
+          if (res.ok) {
+            allApplications = allApplications.filter(a => a.id !== app.id);
+            showToast('Application removed');
+            renderKanban(allApplications);
+            updateStats();
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      return card;
+    }
+
+    // Update Stats counters
+    async function updateStats() {
+      if (!currentUser) return;
+      try {
+        const res = await fetch(`/api/v1/applications/pipeline-stats?user_id=${currentUser.id}`);
+        if (!res.ok) return;
+        const stats = await res.json();
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-saved').textContent = stats.saved;
+        document.getElementById('stat-applied').textContent = stats.applied;
+        document.getElementById('stat-interview').textContent = stats.interview;
+        document.getElementById('stat-offer').textContent = stats.offer;
+      } catch (err) {
+        console.error('Error fetching pipeline stats:', err);
+      }
+    }
+
+    // AI Pitch Modal open
+    function openPitchModal(app) {
+      const job = app.job || {};
+      document.getElementById('pitch-modal-title').textContent = job.title || 'Role';
+      document.getElementById('pitch-modal-company').textContent = (job.company || '') + ' • ' + (job.location || '');
+      document.getElementById('pitch-modal-pitch').textContent = app.quick_pitch || 'Custom pitch available upon scraping.';
+      document.getElementById('pitch-modal-linkedin').textContent = app.outreach_linkedin || 'Hi [Hiring Manager], noticed the opening for ' + (job.title || 'this role') + ' and wanted to connect.';
+      document.getElementById('pitch-modal-email').textContent = app.outreach_email || 'Subject: Application for ' + (job.title || 'Software Engineer');
+      document.getElementById('modal-pitch').classList.remove('hidden');
+    }
+
+    // Copy to clipboard helpers
+    document.getElementById('btn-copy-linkedin').addEventListener('click', () => {
+      const txt = document.getElementById('pitch-modal-linkedin').textContent;
+      navigator.clipboard.writeText(txt);
+      showToast('LinkedIn note copied to clipboard!');
+    });
+    document.getElementById('btn-copy-email').addEventListener('click', () => {
+      const txt = document.getElementById('pitch-modal-email').textContent;
+      navigator.clipboard.writeText(txt);
+      showToast('Cold email template copied to clipboard!');
+    });
+
+    // Close Modals
+    document.getElementById('btn-close-pitch-modal').addEventListener('click', () => document.getElementById('modal-pitch').classList.add('hidden'));
+    document.getElementById('btn-dismiss-pitch-modal').addEventListener('click', () => document.getElementById('modal-pitch').classList.add('hidden'));
+
+    // Scan Modal Controls
+    const scanModal = document.getElementById('modal-scan');
+    document.getElementById('btn-open-scan').addEventListener('click', () => scanModal.classList.remove('hidden'));
+    document.getElementById('btn-close-scan-modal').addEventListener('click', () => scanModal.classList.add('hidden'));
+    document.getElementById('btn-cancel-scan-modal').addEventListener('click', () => scanModal.classList.add('hidden'));
+
+    // Submit Background Scan Task
+    document.getElementById('btn-submit-scan').addEventListener('click', async () => {
+      const role = document.getElementById('scan-input-role').value;
+      const location = document.getElementById('scan-input-location').value;
+      const notifyTelegram = document.getElementById('scan-check-telegram').checked;
+
+      scanModal.classList.add('hidden');
+
+      // Show banner & start polling
+      const banner = document.getElementById('scan-progress-banner');
+      banner.classList.remove('hidden');
+      document.getElementById('scan-banner-status').textContent = 'Queuing Celery background worker...';
+      document.getElementById('scan-banner-percent').textContent = '10%';
+      document.getElementById('scan-progress-fill').style.width = '10%';
+
+      try {
+        const queryParams = new URLSearchParams({
+          user_id: currentUser ? currentUser.id : 1,
+          role: role,
+          location: location,
+          notify_telegram: notifyTelegram
+        });
+
+        const res = await fetch(`/api/v1/jobs/scan-async?${queryParams.toString()}`, { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to dispatch async scan');
+
+        const data = await res.json();
+        const taskId = data.task_id;
+        document.getElementById('scan-banner-task-id').textContent = `Task ID: ${taskId}`;
+
+        // Poll Celery task
+        pollTask(taskId);
+      } catch (err) {
+        showToast('Error initiating background scan: ' + err.message);
+        banner.classList.add('hidden');
+      }
+    });
+
+    // Poll Celery task status endpoint
+    function pollTask(taskId) {
+      if (pollingInterval) clearInterval(pollingInterval);
+
+      let step = 0;
+      pollingInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/v1/tasks/${taskId}`);
+          if (!res.ok) return;
+          const taskData = await res.json();
+
+          if (taskData.state === 'PROGRESS') {
+            const meta = taskData.meta || {};
+            const pct = meta.progress || (30 + step * 10);
+            document.getElementById('scan-banner-status').textContent = meta.status || 'Scraping and analyzing job boards...';
+            document.getElementById('scan-banner-percent').textContent = `${pct}%`;
+            document.getElementById('scan-progress-fill').style.width = `${pct}%`;
+            step++;
+          } else if (taskData.state === 'SUCCESS') {
+            clearInterval(pollingInterval);
+            document.getElementById('scan-banner-status').textContent = 'Scan completed successfully!';
+            document.getElementById('scan-banner-percent').textContent = '100%';
+            document.getElementById('scan-progress-fill').style.width = '100%';
+            
+            const matchesCount = taskData.result ? (taskData.result.matches_count || 0) : 0;
+            showToast(`Scan complete! Found ${matchesCount} matching jobs.`);
+
+            setTimeout(() => {
+              document.getElementById('scan-progress-banner').classList.add('hidden');
+            }, 3000);
+
+            await loadBoard();
+          } else if (taskData.state === 'FAILURE') {
+            clearInterval(pollingInterval);
+            document.getElementById('scan-banner-status').textContent = 'Task encountered an error.';
+            showToast('Scan worker failed. Check logs.');
+            setTimeout(() => {
+              document.getElementById('scan-progress-banner').classList.add('hidden');
+            }, 4000);
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 2000);
+    }
+
+    // Profile Modal Controls
+    const profModal = document.getElementById('modal-profile');
+    document.getElementById('btn-open-profile').addEventListener('click', async () => {
+      if (!currentUser) return;
+      try {
+        const res = await fetch(`/api/v1/users/${currentUser.id}/profile`);
+        if (res.ok) {
+          const prof = await res.json();
+          document.getElementById('profile-modal-name').textContent = currentUser.full_name;
+          document.getElementById('profile-modal-email').textContent = currentUser.email;
+          document.getElementById('prof-headline').value = prof.headline || '';
+          document.getElementById('prof-roles').value = (prof.target_roles || []).join(', ');
+          document.getElementById('prof-skills').value = (prof.skills || []).join(', ');
+          document.getElementById('prof-location').value = prof.location || 'Philippines';
+          document.getElementById('prof-min-score').value = prof.min_match_percent || 65;
+          profModal.classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    document.getElementById('btn-close-profile-modal').addEventListener('click', () => profModal.classList.add('hidden'));
+    document.getElementById('btn-cancel-profile-modal').addEventListener('click', () => profModal.classList.add('hidden'));
+
+    // Save Profile
+    document.getElementById('btn-save-profile').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const roles = document.getElementById('prof-roles').value.split(',').map(s => s.trim()).filter(Boolean);
+      const skills = document.getElementById('prof-skills').value.split(',').map(s => s.trim()).filter(Boolean);
+      const headline = document.getElementById('prof-headline').value;
+      const location = document.getElementById('prof-location').value;
+      const minScore = parseInt(document.getElementById('prof-min-score').value) || 65;
+
+      try {
+        const res = await fetch(`/api/v1/users/${currentUser.id}/profile`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            headline: headline,
+            target_roles: roles,
+            skills: skills,
+            location: location,
+            min_match_percent: minScore
+          })
+        });
+
+        if (res.ok) {
+          showToast('Profile updated successfully!');
+          document.getElementById('stat-min-match').textContent = minScore + '%';
+          profModal.classList.add('hidden');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to save profile');
+      }
+    });
+
+    // Search and Filter Listeners
+    document.getElementById('input-search').addEventListener('input', () => renderKanban(allApplications));
+    document.getElementById('select-platform').addEventListener('change', () => renderKanban(allApplications));
+    document.getElementById('btn-refresh-board').addEventListener('click', () => {
+      showToast('Refreshing pipeline...');
+      loadBoard();
+    });
+
+    // Start App
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

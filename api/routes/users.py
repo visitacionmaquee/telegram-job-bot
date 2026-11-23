@@ -32,6 +32,56 @@ def create_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
     return user
 
+@router.get("/default", response_model=schemas.UserResponse)
+def get_or_create_default_user(db: Session = Depends(get_db)):
+    """Retrieve or initialize the primary candidate user with pre-loaded profile data"""
+    from resume_profile import CANDIDATE_PROFILE
+
+    user = db.query(models.User).filter(models.User.email == "visitacionmaquee@gmail.com").first()
+    if not user:
+        user = db.query(models.User).first()
+
+    if not user:
+        user = models.User(
+            email="visitacionmaquee@gmail.com",
+            full_name=CANDIDATE_PROFILE.get("name", "Engr. Maquee Reinhart P. Visitacion"),
+            telegram_chat_id="8880104517",
+            tier="pro"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        skills_raw = CANDIDATE_PROFILE.get("skills", {})
+        skills_flat = []
+        if isinstance(skills_raw, dict):
+            for v in skills_raw.values():
+                skills_flat.extend(v if isinstance(v, list) else [v])
+        elif isinstance(skills_raw, list):
+            skills_flat = skills_raw
+
+        profile = models.CandidateProfile(
+            user_id=user.id,
+            headline="Graduating Computer Engineering Student | Software & QA Engineer",
+            location=CANDIDATE_PROFILE.get("contact", {}).get("location", "Philippines"),
+            skills=skills_flat,
+            projects=CANDIDATE_PROFILE.get("projects", []),
+            education=CANDIDATE_PROFILE.get("education", {}),
+            target_roles=[
+                "Junior Software Engineer",
+                "Entry Level Software Engineer",
+                "Junior QA Engineer",
+                "Junior Python Developer",
+                "Associate Software Engineer"
+            ],
+            min_match_percent=65
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(user)
+
+    return user
+
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     """Fetch user by ID"""

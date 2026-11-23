@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.database import init_database
-from api.routes import health, users, jobs, applications, tasks
+from api.routes import health, users, jobs, applications, tasks, dashboard
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,11 +32,13 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(jobs.router, prefix="/api/v1")
 app.include_router(applications.router, prefix="/api/v1")
 app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(dashboard.router)
 
 @app.get("/")
 def root():
     return {
         "message": "Welcome to JobRadar AI API",
+        "dashboard": "/dashboard",
         "docs": "/docs",
         "health": "/health"
     }

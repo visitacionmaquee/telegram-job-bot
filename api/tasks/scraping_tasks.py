@@ -122,6 +122,29 @@ def async_scrape_and_match(
         matched_results.sort(key=lambda x: x["match_score"], reverse=True)
         top_matches = matched_results[:10]
 
+        # Auto-track top matches on user's Kanban board if not already tracked
+        if user_id:
+            for m in top_matches:
+                j_id = m.get("job_id")
+                if j_id:
+                    app_exists = db.query(models.Application).filter(
+                        models.Application.user_id == user_id,
+                        models.Application.job_id == j_id
+                    ).first()
+                    if not app_exists:
+                        new_app = models.Application(
+                            user_id=user_id,
+                            job_id=j_id,
+                            status="saved",
+                            match_score=m.get("match_score", 0),
+                            highlight_project=m.get("highlight_project"),
+                            quick_pitch=m.get("quick_pitch"),
+                            outreach_linkedin=m.get("outreach_linkedin"),
+                            outreach_email=m.get("outreach_email")
+                        )
+                        db.add(new_app)
+            db.commit()
+
         self.update_state(state="PROGRESS", meta={"progress": 85, "status": "Dispatching notifications..."})
 
         # Send Telegram notification if requested and configured

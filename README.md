@@ -7,39 +7,57 @@ A cloud-native SaaS and automation platform built for software engineers, fresh 
 ## 🏗 System Architecture
 
 ```
-                                  [ Web Dashboard / Users ]
-                                             │
-                                             ▼
-                                  ┌─────────────────────┐
-                                  │   FastAPI Backend   │
-                                  │   (RESTful API)     │
-                                  └──────────┬──────────┘
-                                             │
-                      ┌──────────────────────┼──────────────────────┐
-                      ▼                      ▼                      ▼
-            ┌──────────────────┐   ┌───────────────────┐  ┌──────────────────┐
-            │ PostgreSQL DB    │   │ Multi-Board       │  │ Telegram Bot &   │
-            │ (Users, Profile, │   │ Scraper Engine    │  │ Async Notifier   │
-            │  Jobs, Kanban)   │   │ (LinkedIn/Indeed) │  │ (Instant Alerts) │
-            └──────────────────┘   └───────────────────┘  └──────────────────┘
+                                  ┌────────────────────────────────┐
+                                  │   Web Dashboard & Kanban UI    │
+                                  │   (Tailwind CSS / Glassmorphism│
+                                  │      at /dashboard)            │
+                                  └───────────────┬────────────────┘
+                                                  │
+                                                  ▼
+                                       ┌─────────────────────┐
+                                       │   FastAPI Backend   │
+                                       │   (RESTful API)     │
+                                       └──────────┬──────────┘
+                                                  │
+                                                  ▼
+                                      ┌───────────────────────┐
+                                      │ Celery + Redis Broker │
+                                      │ (Async Task Queue)    │
+                                      └──────────┬────────────┘
+                                                 │
+                          ┌──────────────────────┼──────────────────────┐
+                          ▼                      ▼                      ▼
+                ┌──────────────────┐   ┌───────────────────┐  ┌──────────────────┐
+                │ PostgreSQL DB    │   │ Multi-Board       │  │ Telegram Bot &   │
+                │ (Users, Profile, │   │ Scraper Engine    │  │ Async Notifier   │
+                │  Jobs, Kanban)   │   │ (LinkedIn/Indeed) │  │ (Instant Alerts) │
+                └──────────────────┘   └───────────────────┘  └──────────────────┘
 ```
 
 ---
 
 ## 🚀 Key Modules & Capabilities
 
-1. **Multi-Tenant RESTful API (`api/`)**:
+1. **Interactive Web Dashboard (`/dashboard`)**:
+   * **Modern Dark-Mode Kanban Board**: 5 interactive application stages (`Matched / Saved`, `Applied`, `Interviewing`, `Offer Received`, `Archived`).
+   * **Real-Time Asynchronous Job Radar**: Triggers Celery worker tasks via `POST /api/v1/jobs/scan-async` and polls execution state with a live animated progress bar.
+   * **Candidate Profile & Resume Management**: In-browser skills tag editor, headline customizer, and target role adjuster synced with `PUT /api/v1/users/{id}/profile`.
+   * **1-Click AI Outreach Copier**: Instantly copies personalized 300-character LinkedIn connection requests and customized cold email pitches.
+
+2. **Multi-Tenant RESTful API (`api/`)**:
    * **FastAPI Backend**: Structured under modern clean architecture (`routes`, `models`, `schemas`, `services`).
    * **PostgreSQL / SQLAlchemy ORM**: Multi-user models with automatic SQLite fallback for local development.
    * **Interactive Swagger UI**: Explore and test live API endpoints at `http://localhost:8000/docs`.
 
-2. **Asynchronous Task Queue (Celery + Redis)**:
+3. **Asynchronous Task Queue (Celery + Redis)**:
    * **Decoupled Job Scraping**: Offloads long-running web scraping across LinkedIn, Indeed & Glassdoor to background Celery workers.
    * `POST /api/v1/jobs/scan-async` — Enqueues background scraping task, returns immediate task ID.
    * `GET /api/v1/tasks/{task_id}` — Polls task progress, execution state (`PENDING`, `PROGRESS`, `SUCCESS`), and result payload.
 
-3. **Core Endpoints**:
+4. **Core Endpoints**:
+   * `GET /dashboard` — Interactive Web Dashboard & Kanban Tracker.
    * `GET /health` — Real-time API & database connectivity check.
+   * `GET /api/v1/users/default` — Automatic provisioning of candidate profile & telemetry state.
    * `POST /api/v1/users` — User onboarding and subscription tiering.
    * `PUT /api/v1/users/{id}/profile` — Candidate resume skills & target roles configuration.
    * `GET /api/v1/jobs` & `POST /api/v1/jobs/scan` — Job catalog querying & scraper trigger.
@@ -47,12 +65,12 @@ A cloud-native SaaS and automation platform built for software engineers, fresh 
    * `GET /api/v1/tasks/{task_id}` — Asynchronous task status poller.
    * `GET /api/v1/applications/pipeline-stats` — Kanban tracker summary (`saved`, `applied`, `interview`, `offer`).
 
-4. **IaaS & Containerization Ready**:
+5. **IaaS & Containerization Ready**:
    * **Docker Compose**: Single-command startup of PostgreSQL 16 + Redis 7 + Celery Worker + FastAPI Backend + Bot Worker (`docker compose up --build`).
    * **Oracle Cloud (OCI) Ready**: Configured for deployment on Oracle Cloud Always-Free Compute instances.
 
-5. **Automated CI/CD Pipeline (`.github/workflows/ci.yml`)**:
-   * Automated syntax validation, code integrity, and 11-test `pytest` test suite on every git push.
+6. **Automated CI/CD Pipeline (`.github/workflows/ci.yml`)**:
+   * Automated syntax validation, code integrity, and 14-test `pytest` test suite on every git push.
    * Automated Docker container build validation.
 
 ---
@@ -64,6 +82,7 @@ A cloud-native SaaS and automation platform built for software engineers, fresh 
 uvicorn api.main:app --reload --port 8000
 ```
 Open your browser and navigate to:
+* **Web Dashboard & Kanban Pipeline**: `http://127.0.0.1:8000/dashboard`
 * **Interactive API Docs**: `http://127.0.0.1:8000/docs`
 * **Health Check**: `http://127.0.0.1:8000/health`
 
