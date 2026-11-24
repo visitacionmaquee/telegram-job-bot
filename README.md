@@ -65,12 +65,15 @@ A cloud-native SaaS and automation platform built for software engineers, fresh 
    * `GET /api/v1/tasks/{task_id}` — Asynchronous task status poller.
    * `GET /api/v1/applications/pipeline-stats` — Kanban tracker summary (`saved`, `applied`, `interview`, `offer`).
 
-5. **IaaS & Containerization Ready**:
-   * **Docker Compose**: Single-command startup of PostgreSQL 16 + Redis 7 + Celery Worker + FastAPI Backend + Bot Worker (`docker compose up --build`).
-   * **Oracle Cloud (OCI) Ready**: Configured for deployment on Oracle Cloud Always-Free Compute instances.
+5. **IaaS & Oracle Cloud (OCI) Production Stack (`deploy/`, `docker-compose.prod.yml`)**:
+   * **Nginx Reverse Proxy**: Production reverse proxy with Gzip compression, rate limiting (`limit_req_zone`), and hardened security headers (HSTS, CSP, X-Frame-Options).
+   * **Automated Let's Encrypt SSL**: Certbot container with automated 12-hour certificate renewals.
+   * **OCI Bootstrap Automation**: `deploy/setup_oci_vm.sh` configures Ubuntu/Oracle Linux VM, opens restrictive OCI iptables rules, installs Docker, and enables `systemd` auto-start.
+   * **Zero-Trust Network Isolation**: Database and Redis are isolated within a private Docker bridge network (`jobradar_internal`), never exposed directly to the public internet.
+   * **Full Deployment Guide**: Step-by-step instructions in [OCI Deployment Guide](file:///C:/Users/visit/.gemini/antigravity/scratch/telegram-job-bot/deploy/OCI_DEPLOYMENT_GUIDE.md).
 
 6. **Automated CI/CD Pipeline (`.github/workflows/ci.yml`)**:
-   * Automated syntax validation, code integrity, and 14-test `pytest` test suite on every git push.
+   * Automated syntax validation, code integrity, and 17-test `pytest` test suite on every git push.
    * Automated Docker container build validation.
 
 ---
