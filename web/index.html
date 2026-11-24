@@ -27,6 +27,27 @@
     .column-drag-hover { border-color: #10b981 !important; background-color: rgba(16, 185, 129, 0.05) !important; }
     .grab-handle { cursor: grab; }
     .grab-handle:active { cursor: grabbing; }
+
+    /* Independent Column Scrollbars */
+    .cards-container {
+      max-height: calc(100vh - 350px);
+      min-height: 480px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .cards-container::-webkit-scrollbar {
+      width: 5px;
+    }
+    .cards-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .cards-container::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 9999px;
+    }
+    .cards-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(16, 185, 129, 0.6);
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
@@ -261,15 +282,15 @@
     <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start" id="kanban-main-grid">
       
       <!-- 1. MATCHED / SAVED -->
-      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="saved" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'saved')">
-        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[calc(100vh-280px)] min-h-[520px] transition" data-status="saved" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'saved')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 shrink-0">
           <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
             <span class="font-bold text-sm text-slate-200">Matched / Saved</span>
           </div>
           <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-amber-400" id="count-saved">0</span>
         </div>
-        <div class="cards-container space-y-3 flex-1" id="col-saved">
+        <div class="cards-container space-y-3 flex-1 overflow-y-auto pr-1.5" id="col-saved">
           <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
             Click <strong class="text-emerald-400">"Run AI Scan"</strong> to discover matching positions.
           </div>
@@ -277,15 +298,15 @@
       </div>
 
       <!-- 2. APPLIED -->
-      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="applied" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'applied')">
-        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[calc(100vh-280px)] min-h-[520px] transition" data-status="applied" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'applied')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 shrink-0">
           <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
             <span class="font-bold text-sm text-slate-200">Applied</span>
           </div>
           <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-sky-400" id="count-applied">0</span>
         </div>
-        <div class="cards-container space-y-3 flex-1" id="col-applied">
+        <div class="cards-container space-y-3 flex-1 overflow-y-auto pr-1.5" id="col-applied">
           <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
             Drag jobs here once you submit your resume.
           </div>
@@ -293,15 +314,15 @@
       </div>
 
       <!-- 3. INTERVIEWING -->
-      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="interview" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'interview')">
-        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[calc(100vh-280px)] min-h-[520px] transition" data-status="interview" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'interview')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 shrink-0">
           <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
             <span class="font-bold text-sm text-slate-200">Interviewing</span>
           </div>
           <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-purple-400" id="count-interview">0</span>
         </div>
-        <div class="cards-container space-y-3 flex-1" id="col-interview">
+        <div class="cards-container space-y-3 flex-1 overflow-y-auto pr-1.5" id="col-interview">
           <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
             Drag jobs here when you get an interview or screening invite.
           </div>
@@ -309,15 +330,15 @@
       </div>
 
       <!-- 4. OFFER RECEIVED -->
-      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="offer" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'offer')">
-        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[calc(100vh-280px)] min-h-[520px] transition" data-status="offer" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'offer')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 shrink-0">
           <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
             <span class="font-bold text-sm text-slate-200">Offer Received</span>
           </div>
           <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-emerald-400" id="count-offer">0</span>
         </div>
-        <div class="cards-container space-y-3 flex-1" id="col-offer">
+        <div class="cards-container space-y-3 flex-1 overflow-y-auto pr-1.5" id="col-offer">
           <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
             Target zone! Drag offers here for negotiation tracking.
           </div>
