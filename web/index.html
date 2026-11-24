@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -16,16 +16,6 @@
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            brand: {
-              50: '#ecfdf5',
-              100: '#d1fae5',
-              400: '#34d399',
-              500: '#10b981',
-              600: '#059669',
-              700: '#047857',
-            }
           }
         }
       }
@@ -33,24 +23,23 @@
   </script>
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .kanban-col::-webkit-scrollbar { width: 6px; }
-    .kanban-col::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 4px; }
-    .kanban-col::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
-    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .animate-pulse-slow { animation: pulse-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    .card-dragging { opacity: 0.45; transform: scale(0.98); }
+    .column-drag-hover { border-color: #10b981 !important; background-color: rgba(16, 185, 129, 0.05) !important; }
+    .grab-handle { cursor: grab; }
+    .grab-handle:active { cursor: grabbing; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
 
   <!-- ================= TOP NAVIGATION ================= -->
-  <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       
-      <!-- Logo & Brand -->
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
         <div>
@@ -58,54 +47,70 @@
             <span class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
               JobRadar AI
             </span>
-            <span class="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span class="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               SaaS v1.0
             </span>
           </div>
-          <p class="text-xs text-slate-400">Multi-Tenant Career Pipeline & AI Recruiter</p>
+          <p class="text-xs text-slate-400">Career Intelligence & AI Application Pipeline</p>
         </div>
       </div>
 
-      <!-- System Health Indicator -->
-      <div class="hidden md:flex items-center space-x-4 bg-slate-800/50 border border-slate-700/60 rounded-full px-3.5 py-1 text-xs">
-        <span class="flex items-center space-x-1.5 text-emerald-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-          <span class="font-medium">FastAPI Engine</span>
-        </span>
-        <span class="text-slate-600">|</span>
-        <span class="flex items-center space-x-1.5 text-cyan-400">
-          <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
-          <span class="font-medium">Celery Async</span>
-        </span>
-        <span class="text-slate-600">|</span>
-        <span class="flex items-center space-x-1.5 text-indigo-400">
-          <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-          <span class="font-medium">Telegram Bot</span>
-        </span>
-      </div>
-
-      <!-- Action Buttons -->
+      <!-- Action & Navigation Controls -->
       <div class="flex items-center space-x-3">
-        <button id="btn-open-scan" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all transform active:scale-95">
-          <svg class="w-4 h-4 animate-spin hidden" id="scan-btn-spinner" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-          </svg>
-          <svg class="w-4 h-4" id="scan-btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        
+        <!-- System Status Popover Button -->
+        <div class="relative">
+          <button id="btn-toggle-status" aria-label="System Services Status" title="View System Status" class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700 transition focus-visible:ring-2 focus-visible:ring-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="hidden md:inline">System Live</span>
+          </button>
+          
+          <!-- Popover Menu -->
+          <div id="popover-status" class="hidden absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 space-y-3 z-50 text-xs">
+            <div class="font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center justify-between">
+              <span>Service Telemetry</span>
+              <span class="text-[10px] text-emerald-400 uppercase font-mono">All Healthy</span>
+            </div>
+            <div class="space-y-2 text-slate-300">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">FastAPI Backend</span>
+                <span class="text-emerald-400 font-mono">Port 8000 (Active)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Celery Task Queue</span>
+                <span class="text-cyan-400 font-mono">Distributed / Redis</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Telegram Bot</span>
+                <span class="text-indigo-400 font-mono">Synced (8880104517)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Prometheus & Grafana</span>
+                <span class="text-amber-400 font-mono">Scraping Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Run AI Scan Button -->
+        <button id="btn-open-scan" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition transform active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
           </svg>
           <span>Run AI Scan</span>
         </button>
 
-        <button id="btn-open-profile" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition">
-          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Candidate Profile Modal Trigger -->
+        <button id="btn-open-profile" aria-label="Candidate Resume Profile" title="Edit Candidate Profile & Skills" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700 transition focus-visible:ring-2 focus-visible:ring-emerald-400">
+          <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
           <span class="hidden sm:inline" id="nav-user-name">Engr. Maquee</span>
         </button>
 
-        <a href="/docs" target="_blank" class="p-2 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-slate-200 border border-slate-700/60 transition" title="Open Swagger API Docs">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Swagger Docs Link -->
+        <a href="/docs" target="_blank" aria-label="Open Swagger API Documentation" title="Open Interactive Swagger API Docs" class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition focus-visible:ring-2 focus-visible:ring-emerald-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
           </svg>
         </a>
@@ -114,52 +119,63 @@
     </div>
   </header>
 
-  <!-- ================= MAIN CONTENT CONTAINER ================= -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main class="flex-1 max-w-[1720px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-    <!-- USER SUMMARY & METRICS CARDS -->
-    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-      <!-- Total Applications -->
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-        <div class="text-xs font-medium text-slate-400">Total Tracked</div>
-        <div class="text-2xl font-bold text-white mt-1" id="stat-total">0</div>
-        <div class="text-[11px] text-slate-500 mt-1 flex items-center space-x-1">
-          <span>Active Pipeline</span>
+    <!-- METRICS CARDS ROW (High contrast, meaningful stats) -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      
+      <!-- 1. Total Opportunities -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Tracked</div>
+          <div class="text-2xl font-bold text-slate-100 mt-1" id="stat-total">0</div>
+          <div class="text-xs text-slate-400 mt-0.5" id="stat-saved-sub">0 in Review Queue</div>
+        </div>
+        <div class="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
         </div>
       </div>
-      <!-- Saved / Matched -->
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-        <div class="text-xs font-medium text-amber-400">Matched / Saved</div>
-        <div class="text-2xl font-bold text-amber-300 mt-1" id="stat-saved">0</div>
-        <div class="text-[11px] text-slate-500 mt-1">Ready for Review</div>
+
+      <!-- 2. Active Applications -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Pipeline</div>
+          <div class="text-2xl font-bold text-sky-400 mt-1" id="stat-active-pipeline">0</div>
+          <div class="text-xs text-slate-400 mt-0.5">Submitted Resumes</div>
+        </div>
+        <div class="p-3 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+        </div>
       </div>
-      <!-- Applied -->
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-        <div class="text-xs font-medium text-sky-400">Applied</div>
-        <div class="text-2xl font-bold text-sky-300 mt-1" id="stat-applied">0</div>
-        <div class="text-[11px] text-slate-500 mt-1">Submitted Resumes</div>
+
+      <!-- 3. Interviews & Offers -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Interviews & Offers</div>
+          <div class="text-2xl font-bold text-purple-400 mt-1" id="stat-interview-offer">0</div>
+          <div class="text-xs text-slate-400 mt-0.5">High Intent Stage</div>
+        </div>
+        <div class="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+        </div>
       </div>
-      <!-- Interviewing -->
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-        <div class="text-xs font-medium text-purple-400">Interviewing</div>
-        <div class="text-2xl font-bold text-purple-300 mt-1" id="stat-interview">0</div>
-        <div class="text-[11px] text-slate-500 mt-1">Screen / Technical</div>
+
+      <!-- 4. Quality Match Score -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <div>
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Quality Score</div>
+          <div class="text-2xl font-bold text-emerald-400 mt-1" id="stat-avg-score">--</div>
+          <div class="text-xs text-slate-400 mt-0.5">Resume Fit Rating</div>
+        </div>
+        <div class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
       </div>
-      <!-- Offers -->
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-        <div class="text-xs font-medium text-emerald-400">Offer Received</div>
-        <div class="text-2xl font-bold text-emerald-300 mt-1" id="stat-offer">0</div>
-        <div class="text-[11px] text-slate-500 mt-1">Hired & Final Stage</div>
-      </div>
-      <!-- Match Threshold -->
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-        <div class="text-xs font-medium text-teal-400">AI Match Floor</div>
-        <div class="text-2xl font-bold text-teal-300 mt-1" id="stat-min-match">65%</div>
-        <div class="text-[11px] text-slate-500 mt-1">Quality Gate</div>
-      </div>
+
     </section>
 
-    <!-- ASYNC SCANNING REAL-TIME BANNER (Shown during background task) -->
+    <!-- LIVE ASYNC SCANNING BANNER -->
     <div id="scan-progress-banner" class="hidden bg-gradient-to-r from-emerald-950/80 via-teal-950/80 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
@@ -169,7 +185,7 @@
           </span>
           <span class="font-semibold text-sm text-emerald-200" id="scan-banner-status">AI Scraper Worker running in background...</span>
         </div>
-        <span class="text-xs font-mono text-emerald-400" id="scan-banner-percent">25%</span>
+        <span class="text-xs font-mono font-bold text-emerald-400" id="scan-banner-percent">25%</span>
       </div>
       <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
         <div id="scan-progress-fill" class="bg-gradient-to-r from-emerald-400 to-cyan-400 h-2 rounded-full transition-all duration-300" style="width: 25%"></div>
@@ -180,108 +196,150 @@
       </div>
     </div>
 
-    <!-- SEARCH & CONTROLS TOOLBAR -->
-    <section class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-900/40 p-3 rounded-2xl border border-slate-800">
-      <div class="flex-1 flex items-center space-x-3">
-        <!-- Search -->
+    <!-- FILTER & SORT CONTROLS TOOLBAR -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        
+        <!-- Search Input -->
         <div class="relative flex-1">
-          <svg class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input type="text" id="input-search" placeholder="Filter by job title, company, or tech stack..." class="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+          <input type="text" id="input-search" aria-label="Search jobs" placeholder="Filter by job title, company, or tech stack..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-400">
         </div>
-        
-        <!-- Platform filter -->
-        <select id="select-platform" class="bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-emerald-500">
-          <option value="all">All Sources</option>
-          <option value="linkedin">LinkedIn</option>
-          <option value="indeed">Indeed</option>
-          <option value="glassdoor">Glassdoor</option>
-        </select>
+
+        <!-- Filter Selectors & Sort -->
+        <div class="flex flex-wrap items-center gap-3">
+          
+          <!-- Work Setup Filter -->
+          <select id="select-setup" aria-label="Filter by work setup" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-300 focus:outline-none focus:border-emerald-500">
+            <option value="all">Work Setup: All</option>
+            <option value="Remote">Remote</option>
+            <option value="Hybrid">Hybrid</option>
+            <option value="On-site">On-site</option>
+          </select>
+
+          <!-- Platform Filter -->
+          <select id="select-platform" aria-label="Filter by job platform" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-300 focus:outline-none focus:border-emerald-500">
+            <option value="all">Platform: All</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="indeed">Indeed</option>
+            <option value="glassdoor">Glassdoor</option>
+          </select>
+
+          <!-- Sort Order -->
+          <select id="select-sort" aria-label="Sort jobs" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-medium text-slate-300 focus:outline-none focus:border-emerald-500">
+            <option value="score_desc">Sort: Match Score (Highest)</option>
+            <option value="date_desc">Sort: Date (Newest)</option>
+            <option value="company_asc">Sort: Company Name (A-Z)</option>
+          </select>
+
+          <!-- Refresh Board Button -->
+          <button id="btn-refresh-board" aria-label="Refresh pipeline cards" title="Refresh Board" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition focus-visible:ring-2 focus-visible:ring-emerald-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+
       </div>
 
-      <div class="flex items-center space-x-2">
-        <button id="btn-refresh-board" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Refresh Pipeline">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
+      <!-- Live Match Score Filter Slider -->
+      <div class="flex items-center justify-between border-t border-slate-800/80 pt-3 text-xs text-slate-400">
+        <div class="flex items-center space-x-3 w-full max-w-md">
+          <label for="slider-min-score" class="font-medium shrink-0">Show matches above:</label>
+          <input type="range" id="slider-min-score" min="50" max="95" value="65" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+          <span id="slider-min-score-val" class="font-mono font-bold text-emerald-400 w-10 text-right">65%</span>
+        </div>
+        <div class="text-[11px] text-slate-500 hidden sm:block">
+          💡 Drag & drop job cards between columns or use quick action buttons
+        </div>
       </div>
     </section>
 
-    <!-- ================= 5-COLUMN KANBAN BOARD ================= -->
-    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-start min-h-[550px]">
+    <!-- ================= FULL-WIDTH KANBAN BOARD ================= -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start" id="kanban-main-grid">
       
       <!-- 1. MATCHED / SAVED -->
-      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
-        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
-          <div class="flex items-center space-x-2">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="saved" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'saved')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+          <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-            <span class="font-semibold text-sm text-slate-200">Matched / Saved</span>
+            <span class="font-bold text-sm text-slate-200">Matched / Saved</span>
           </div>
-          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-amber-400" id="count-saved">0</span>
+          <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-amber-400" id="count-saved">0</span>
         </div>
-        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-saved">
-          <div class="text-center py-10 text-xs text-slate-500">No jobs saved yet. Click "Run AI Scan" to discover positions!</div>
+        <div class="cards-container space-y-3 flex-1" id="col-saved">
+          <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
+            Click <strong class="text-emerald-400">"Run AI Scan"</strong> to discover matching positions.
+          </div>
         </div>
       </div>
 
       <!-- 2. APPLIED -->
-      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
-        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
-          <div class="flex items-center space-x-2">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="applied" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'applied')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+          <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
-            <span class="font-semibold text-sm text-slate-200">Applied</span>
+            <span class="font-bold text-sm text-slate-200">Applied</span>
           </div>
-          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-sky-400" id="count-applied">0</span>
+          <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-sky-400" id="count-applied">0</span>
         </div>
-        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-applied">
-          <div class="text-center py-10 text-xs text-slate-500">No active applications. Move jobs here once submitted.</div>
+        <div class="cards-container space-y-3 flex-1" id="col-applied">
+          <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
+            Drag jobs here once you submit your resume.
+          </div>
         </div>
       </div>
 
       <!-- 3. INTERVIEWING -->
-      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
-        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
-          <div class="flex items-center space-x-2">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="interview" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'interview')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+          <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
-            <span class="font-semibold text-sm text-slate-200">Interviewing</span>
+            <span class="font-bold text-sm text-slate-200">Interviewing</span>
           </div>
-          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-purple-400" id="count-interview">0</span>
+          <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-purple-400" id="count-interview">0</span>
         </div>
-        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-interview">
-          <div class="text-center py-10 text-xs text-slate-500">No interviews scheduled. Good luck!</div>
+        <div class="cards-container space-y-3 flex-1" id="col-interview">
+          <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
+            Drag jobs here when you get an interview or screening invite.
+          </div>
         </div>
       </div>
 
       <!-- 4. OFFER RECEIVED -->
-      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
-        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
-          <div class="flex items-center space-x-2">
+      <div class="kanban-column bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col min-h-[600px] transition" data-status="offer" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'offer')">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+          <div class="flex items-center space-x-2.5">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span class="font-semibold text-sm text-slate-200">Offer Received</span>
+            <span class="font-bold text-sm text-slate-200">Offer Received</span>
           </div>
-          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-emerald-400" id="count-offer">0</span>
+          <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-emerald-400" id="count-offer">0</span>
         </div>
-        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-offer">
-          <div class="text-center py-10 text-xs text-slate-500">Target zone! Job offers will show here.</div>
+        <div class="cards-container space-y-3 flex-1" id="col-offer">
+          <div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">
+            Target zone! Drag offers here for negotiation tracking.
+          </div>
         </div>
       </div>
 
-      <!-- 5. REJECTED / ARCHIVED -->
-      <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-3 flex flex-col h-full max-h-[750px]">
-        <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-1">
-          <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-            <span class="font-semibold text-sm text-slate-400">Archived</span>
-          </div>
-          <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-slate-400" id="count-rejected">0</span>
+    </section>
+
+    <!-- COLLAPSIBLE ARCHIVED DRAWER (Saves horizontal space) -->
+    <section class="border border-slate-800/80 rounded-2xl bg-slate-900/40 p-3">
+      <button id="btn-toggle-archived" class="w-full flex items-center justify-between text-xs font-semibold text-slate-400 hover:text-slate-200 transition py-1 px-2">
+        <div class="flex items-center space-x-2">
+          <span>📁 Archived / Rejected Jobs</span>
+          <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400" id="count-rejected">0</span>
         </div>
-        <div class="kanban-col space-y-3 overflow-y-auto flex-1 pr-1" id="col-rejected">
-          <div class="text-center py-10 text-xs text-slate-500">Archived or rejected records.</div>
+        <span id="archived-toggle-icon">▼ Show</span>
+      </button>
+      <div id="drawer-archived" class="hidden mt-4 pt-3 border-t border-slate-800/80">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="col-rejected">
+          <div class="text-xs text-slate-500 py-4 col-span-full text-center">No archived jobs.</div>
         </div>
       </div>
-
     </section>
 
   </main>
@@ -292,13 +350,11 @@
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center space-x-2.5">
           <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
           <h3 class="text-lg font-bold text-slate-100">Launch AI Job Radar Scan</h3>
         </div>
-        <button id="btn-close-scan-modal" class="text-slate-400 hover:text-slate-200">
+        <button id="btn-close-scan-modal" aria-label="Close modal" class="text-slate-400 hover:text-slate-200">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -307,7 +363,7 @@
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Target Role</label>
           <input type="text" id="scan-input-role" value="Junior Software Engineer" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
-          <p class="text-[11px] text-slate-500 mt-1">E.g., Junior Software Engineer, Junior QA Engineer, Junior Python Developer</p>
+          <p class="text-xs text-slate-400 mt-1">E.g., Junior Software Engineer, Junior QA Engineer, Junior Python Developer</p>
         </div>
 
         <div>
@@ -315,7 +371,7 @@
           <input type="text" id="scan-input-location" value="Philippines" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-emerald-500">
         </div>
 
-        <div class="flex items-center space-x-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+        <div class="flex items-center space-x-2.5 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
           <input type="checkbox" id="scan-check-telegram" checked class="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 bg-slate-900 border-slate-700">
           <label for="scan-check-telegram" class="text-xs text-slate-300">
             Dispatch top matches directly to Telegram (<span class="text-emerald-400 font-mono">Chat ID: 8880104517</span>)
@@ -326,7 +382,7 @@
       <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
         <button id="btn-cancel-scan-modal" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Cancel</button>
         <button id="btn-submit-scan" class="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/20 transition">
-          Enqueue Celery Task
+          Launch Background Scan
         </button>
       </div>
     </div>
@@ -338,16 +394,14 @@
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center space-x-2.5">
           <div class="p-2 rounded-xl bg-teal-500/10 text-teal-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           </div>
           <div>
             <h3 class="text-lg font-bold text-slate-100" id="profile-modal-name">Candidate Profile</h3>
             <p class="text-xs text-slate-400" id="profile-modal-email">visitacionmaquee@gmail.com</p>
           </div>
         </div>
-        <button id="btn-close-profile-modal" class="text-slate-400 hover:text-slate-200">
+        <button id="btn-close-profile-modal" aria-label="Close modal" class="text-slate-400 hover:text-slate-200">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -374,7 +428,7 @@
             <input type="text" id="prof-location" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-teal-500">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Min Match Score (%)</label>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Default Floor (%)</label>
             <input type="number" id="prof-min-score" min="50" max="95" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-teal-500">
           </div>
         </div>
@@ -389,47 +443,42 @@
     </div>
   </div>
 
-  <!-- ================= AI OUTREACH PITCH MODAL ================= -->
+  <!-- ================= AI RECRUITER OUTREACH MODAL ================= -->
   <div id="modal-pitch" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center space-x-2.5">
           <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
           </div>
           <div>
             <h3 class="text-lg font-bold text-slate-100" id="pitch-modal-title">AI Recruiter Outreach</h3>
             <p class="text-xs text-slate-400" id="pitch-modal-company">Company</p>
           </div>
         </div>
-        <button id="btn-close-pitch-modal" class="text-slate-400 hover:text-slate-200">
+        <button id="btn-close-pitch-modal" aria-label="Close modal" class="text-slate-400 hover:text-slate-200">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
 
       <div class="space-y-4 text-sm">
-        <!-- Quick Pitch -->
         <div>
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tailored Elevator Pitch</label>
           <div id="pitch-modal-pitch" class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 text-xs leading-relaxed"></div>
         </div>
 
-        <!-- LinkedIn Note -->
         <div>
           <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-semibold text-sky-400 uppercase tracking-wider">LinkedIn Connection Request (300 chars)</label>
-            <button id="btn-copy-linkedin" class="text-xs text-sky-400 hover:text-sky-300 font-medium">Copy Note</button>
+            <label class="text-xs font-semibold text-sky-400 uppercase tracking-wider">LinkedIn Connection Note (&lt;300 chars)</label>
+            <button id="btn-copy-linkedin" class="text-xs text-sky-400 hover:text-sky-300 font-semibold focus-visible:ring-1 focus-visible:ring-sky-400">📋 Copy Note</button>
           </div>
           <div id="pitch-modal-linkedin" class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 text-xs leading-relaxed font-mono"></div>
         </div>
 
-        <!-- Cold Email -->
         <div>
           <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Cold Email Outreach</label>
-            <button id="btn-copy-email" class="text-xs text-emerald-400 hover:text-emerald-300 font-medium">Copy Email</button>
+            <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Direct Cold Email Outreach</label>
+            <button id="btn-copy-email" class="text-xs text-emerald-400 hover:text-emerald-300 font-semibold focus-visible:ring-1 focus-visible:ring-emerald-400">📋 Copy Email</button>
           </div>
           <div id="pitch-modal-email" class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 text-xs leading-relaxed font-mono whitespace-pre-line"></div>
         </div>
@@ -442,18 +491,19 @@
   </div>
 
   <!-- ================= TOAST NOTIFICATION ================= -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 border border-emerald-500/40 text-slate-200 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 flex items-center space-x-3 text-sm">
-    <span class="text-emerald-400">✓</span>
+  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 border border-emerald-500/40 text-slate-100 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 flex items-center space-x-3 text-sm">
+    <span class="text-emerald-400 font-bold">✓</span>
     <span id="toast-message">Notification</span>
   </div>
 
-  <!-- ================= DASHBOARD APP LOGIC ================= -->
+  <!-- ================= APPLICATION SCRIPT ================= -->
   <script>
     let currentUser = null;
     let allApplications = [];
     let pollingInterval = null;
+    let draggedAppId = null;
 
-    // Toast helper
+    // Toast Notification Helper
     function showToast(msg) {
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toast-message');
@@ -464,16 +514,32 @@
       }, 3500);
     }
 
+    // HTML Escape Helper for Safe Attribute Injection
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Location Sanitizer (Strips Indeed P00 code & dangling commas)
+    function sanitizeLocation(loc) {
+      if (!loc) return 'Philippines';
+      let clean = loc.replace(/\b(P00|00|PH-00)\b/gi, '').replace(/,\s*,/g, ',').trim();
+      clean = clean.replace(/^,\s*|,\s*$/g, '').trim();
+      return clean || 'Philippines';
+    }
+
     // Initialize User & Pipeline
     async function init() {
       try {
         const userRes = await fetch('/api/v1/users/default');
         if (userRes.ok) {
           currentUser = await userRes.json();
-          document.getElementById('nav-user-name').textContent = currentUser.full_name.split(' ')[0] + ' ' + (currentUser.full_name.split(' ')[1] || '');
-          if (currentUser.profile && currentUser.profile.min_match_percent) {
-            document.getElementById('stat-min-match').textContent = currentUser.profile.min_match_percent + '%';
-          }
+          document.getElementById('nav-user-name').textContent = currentUser.full_name;
         }
       } catch (err) {
         console.error('Error fetching default user:', err);
@@ -489,29 +555,52 @@
         const res = await fetch(`/api/v1/applications?user_id=${currentUser.id}`);
         if (!res.ok) return;
         allApplications = await res.json();
-        renderKanban(allApplications);
+        renderKanban();
         updateStats();
       } catch (err) {
         console.error('Error loading applications:', err);
       }
     }
 
-    // Render applications into 5 Kanban columns
-    function renderKanban(apps) {
-      const search = document.getElementById('input-search').value.toLowerCase();
-      const platform = document.getElementById('select-platform').value;
+    // Render applications into Kanban columns with sorting and filtering
+    function renderKanban() {
+      const search = document.getElementById('input-search').value.toLowerCase().trim();
+      const setupFilter = document.getElementById('select-setup').value;
+      const platformFilter = document.getElementById('select-platform').value;
+      const sortOrder = document.getElementById('select-sort').value;
+      const minScore = parseInt(document.getElementById('slider-min-score').value) || 50;
 
-      const filtered = apps.filter(app => {
+      // Filter applications
+      let filtered = allApplications.filter(app => {
         const job = app.job || {};
-        const titleMatch = (job.title || '').toLowerCase().includes(search);
-        const compMatch = (job.company || '').toLowerCase().includes(search);
-        const stackMatch = (app.highlight_project || '').toLowerCase().includes(search);
-        const matchesSearch = titleMatch || compMatch || stackMatch;
+        const title = (job.title || '').toLowerCase();
+        const company = (job.company || '').toLowerCase();
+        const project = (app.highlight_project || '').toLowerCase();
+        const skills = (app.matched_skills || []).join(' ').toLowerCase();
 
-        const matchesPlatform = platform === 'all' || (job.source || '').toLowerCase() === platform.toLowerCase();
-        return matchesSearch && matchesPlatform;
+        const matchesSearch = !search || title.includes(search) || company.includes(search) || project.includes(search) || skills.includes(search);
+        const matchesSetup = setupFilter === 'all' || (job.work_setup || 'On-site').toLowerCase() === setupFilter.toLowerCase();
+        const matchesPlatform = platformFilter === 'all' || (job.source || '').toLowerCase().includes(platformFilter.toLowerCase());
+        const matchesScore = (app.match_score || 0) >= minScore;
+
+        return matchesSearch && matchesSetup && matchesPlatform && matchesScore;
       });
 
+      // Sort applications
+      filtered.sort((a, b) => {
+        if (sortOrder === 'score_desc') {
+          return (b.match_score || 0) - (a.match_score || 0);
+        } else if (sortOrder === 'date_desc') {
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        } else if (sortOrder === 'company_asc') {
+          const compA = (a.job?.company || '').toLowerCase();
+          const compB = (b.job?.company || '').toLowerCase();
+          return compA.localeCompare(compB);
+        }
+        return 0;
+      });
+
+      // Columns map
       const cols = {
         saved: document.getElementById('col-saved'),
         applied: document.getElementById('col-applied'),
@@ -523,7 +612,9 @@
       const counts = { saved: 0, applied: 0, interview: 0, offer: 0, rejected: 0 };
 
       // Clear columns
-      Object.keys(cols).forEach(k => cols[k].innerHTML = '');
+      Object.keys(cols).forEach(k => {
+        if (cols[k]) cols[k].innerHTML = '';
+      });
 
       filtered.forEach(app => {
         const status = (app.status || 'saved').toLowerCase();
@@ -533,12 +624,19 @@
         }
       });
 
-      // Update column badges
+      // Update Column Badges & Empty States
       Object.keys(counts).forEach(k => {
         const badge = document.getElementById(`count-${k}`);
         if (badge) badge.textContent = counts[k];
-        if (counts[k] === 0) {
-          cols[k].innerHTML = `<div class="text-center py-10 text-xs text-slate-500">No jobs in this column</div>`;
+        if (counts[k] === 0 && cols[k]) {
+          const emptyMessages = {
+            saved: 'Click <strong class="text-emerald-400">"Run AI Scan"</strong> to discover matching positions.',
+            applied: 'Drag jobs here once you submit your resume.',
+            interview: 'Drag jobs here when you get an interview invite.',
+            offer: 'Target zone! Drag offers here for negotiation tracking.',
+            rejected: 'No archived jobs.'
+          };
+          cols[k].innerHTML = `<div class="text-center py-16 text-xs text-slate-400 border-2 border-dashed border-slate-800 rounded-xl p-4">${emptyMessages[k] || 'No jobs in this column.'}</div>`;
         }
       });
     }
@@ -547,85 +645,132 @@
     function createCard(app) {
       const job = app.job || {};
       const card = document.createElement('div');
-      card.className = "bg-slate-950 border border-slate-800 hover:border-slate-700/80 rounded-xl p-3.5 space-y-3 shadow-md hover:shadow-lg transition group";
+      card.className = "bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl p-4 space-y-3.5 shadow-md transition group focus-within:ring-2 focus-within:ring-emerald-500/50";
+      card.setAttribute('draggable', 'true');
+      card.dataset.appId = app.id;
 
-      // Score badge color
+      // Drag event listeners
+      card.addEventListener('dragstart', (e) => {
+        draggedAppId = app.id;
+        card.classList.add('card-dragging');
+        e.dataTransfer.setData('text/plain', String(app.id));
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('card-dragging');
+        draggedAppId = null;
+      });
+
+      // Match Score Badge Styling
       const score = app.match_score || 70;
       let scoreBadge = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      if (score < 75) scoreBadge = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+      if (score < 80) scoreBadge = "bg-amber-500/10 text-amber-400 border-amber-500/20";
       if (score < 65) scoreBadge = "bg-slate-500/10 text-slate-400 border-slate-500/20";
 
-      // Platform badge
+      // Platform badge styling
       const src = (job.source || 'linkedin').toLowerCase();
-      let srcBadge = "bg-blue-500/10 text-blue-400";
-      if (src.includes('indeed')) srcBadge = "bg-indigo-500/10 text-indigo-400";
-      if (src.includes('glassdoor')) srcBadge = "bg-emerald-500/10 text-emerald-400";
+      let srcBadge = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+      if (src.includes('indeed')) srcBadge = "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+      if (src.includes('glassdoor')) srcBadge = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+
+      // Work setup styling
+      const setup = job.work_setup || 'On-site';
+      let setupBadge = "bg-slate-800 text-slate-300";
+      if (setup === 'Remote') setupBadge = "bg-teal-500/10 text-teal-300 border border-teal-500/20";
+      if (setup === 'Hybrid') setupBadge = "bg-cyan-500/10 text-cyan-300 border border-cyan-500/20";
+
+      const cleanLoc = sanitizeLocation(job.location);
+      const cleanCompany = job.company || 'Company';
+
+      // Matched skills chips (up to 3)
+      const matchedChips = (app.matched_skills && app.matched_skills.length > 0)
+        ? app.matched_skills.slice(0, 3).map(s => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ ${escapeHtml(s)}</span>`).join('')
+        : `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300">Software</span>`;
+
+      // Missing gap skill chip (if any)
+      const gapChip = (app.missing_skills && app.missing_skills.length > 0)
+        ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20" title="Missing technology for this role">Gap: ${escapeHtml(app.missing_skills[0])}</span>`
+        : '';
 
       card.innerHTML = `
-        <div class="flex items-start justify-between gap-2">
-          <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-slate-100 group-hover:text-emerald-400 transition leading-snug">
-              ${job.title || 'Software Position'}
-            </h4>
-            <div class="text-xs text-slate-400 flex items-center space-x-1.5">
-              <span class="font-medium text-slate-300">${job.company || 'Tech Company'}</span>
-              <span>•</span>
-              <span class="text-slate-500">${job.location || 'Philippines'}</span>
+        <!-- Card Top Bar: Grab Handle, Title, and Match Score -->
+        <div class="flex items-start justify-between gap-2.5">
+          <div class="flex items-start space-x-2 flex-1 min-w-0">
+            <span class="grab-handle text-slate-500 hover:text-slate-300 select-none pt-0.5 text-base" title="Drag to move card">⋮⋮</span>
+            <div class="min-w-0 flex-1">
+              <h4 class="font-bold text-sm text-slate-100 group-hover:text-emerald-400 transition leading-snug break-words">
+                ${escapeHtml(job.title || 'Software Position')}
+              </h4>
+              <!-- Line 1: Company Name (Prominent & Unclipped) -->
+              <div class="text-xs font-semibold text-slate-300 truncate mt-1" title="${escapeHtml(cleanCompany)}">
+                ${escapeHtml(cleanCompany)}
+              </div>
+              <!-- Line 2: Location • Work Setup • Date Posted -->
+              <div class="text-xs text-slate-400 flex flex-wrap items-center gap-1.5 mt-1">
+                <span class="truncate max-w-[140px]" title="${escapeHtml(cleanLoc)}">${escapeHtml(cleanLoc)}</span>
+                <span>•</span>
+                <span class="px-1.5 py-0.2 rounded text-[10px] ${setupBadge}">${escapeHtml(setup)}</span>
+                <span>•</span>
+                <span class="text-slate-400">${escapeHtml(job.date_posted || 'Recent')}</span>
+              </div>
             </div>
           </div>
-          <span class="px-2 py-0.5 text-xs font-mono font-bold rounded-lg border ${scoreBadge} shrink-0">
+          <span class="px-2.5 py-1 text-xs font-mono font-bold rounded-lg border ${scoreBadge} shrink-0 self-start shadow-sm" title="AI Match Score">
             ${score}%
           </span>
         </div>
 
+        <!-- Matched Skills & Missing Gap Chips -->
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          ${matchedChips}
+          ${gapChip}
+        </div>
+
+        <!-- Highlight Project Chip with Full Name on Hover -->
         ${app.highlight_project ? `
-          <div class="text-[11px] bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-md text-slate-400 truncate">
-            🎯 <span class="text-slate-300">${app.highlight_project.split('—')[0]}</span>
+          <div class="text-xs bg-slate-900 border border-slate-800/90 px-2.5 py-1.5 rounded-lg text-slate-300 truncate flex items-center space-x-1.5" title="${escapeHtml(app.highlight_project)}">
+            <span class="text-emerald-400 shrink-0">🎯 Showcase:</span>
+            <span class="truncate font-medium">${escapeHtml(app.highlight_project.split('—')[0].trim())}</span>
           </div>
         ` : ''}
 
-        <div class="flex items-center justify-between pt-2 border-t border-slate-900 text-xs">
-          <div class="flex items-center space-x-1.5">
-            <span class="px-1.5 py-0.5 text-[10px] font-medium rounded uppercase tracking-wider ${srcBadge}">${job.source || 'Job'}</span>
-            ${job.url ? `<a href="${job.url}" target="_blank" class="text-slate-500 hover:text-slate-300" title="Open Job Posting">↗</a>` : ''}
+        <!-- Card Bottom Bar: Actions & Apply -->
+        <div class="flex items-center justify-between pt-2.5 border-t border-slate-800/90 gap-2">
+          
+          <!-- Source & Direct Apply Button -->
+          <div class="flex items-center space-x-2 shrink-0">
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded border uppercase tracking-wider ${srcBadge}">${escapeHtml(job.source || 'Job')}</span>
+            ${job.url ? `
+              <a href="${job.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-600/90 hover:bg-emerald-500 text-white transition shadow-sm focus-visible:ring-2 focus-visible:ring-emerald-400" title="Open Job Application Page">
+                <span>Apply</span>
+                <span>↗</span>
+              </a>
+            ` : ''}
           </div>
 
-          <!-- Quick Move Dropdown -->
-          <div class="flex items-center space-x-1">
-            <button class="btn-pitch px-2 py-1 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-[11px] font-medium transition" title="View AI Outreach Pitch">
-              AI Pitch
+          <!-- Secondary Actions: AI Outreach & Move Stage -->
+          <div class="flex items-center space-x-1.5">
+            <button class="btn-pitch inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-xs font-medium transition focus-visible:ring-2 focus-visible:ring-indigo-400" title="View Tailored AI Outreach Pitch">
+              <span>AI Outreach</span>
             </button>
-            <select class="select-move bg-slate-900 border border-slate-800 text-[11px] text-slate-300 rounded-md px-1.5 py-1 focus:outline-none">
+            <select class="select-move bg-slate-900 border border-slate-800 text-xs text-slate-200 rounded-md px-2 py-1 focus:outline-none focus:border-emerald-500 focus-visible:ring-1 focus-visible:ring-emerald-400" aria-label="Change status">
               <option value="saved" ${app.status === 'saved' ? 'selected' : ''}>Saved</option>
               <option value="applied" ${app.status === 'applied' ? 'selected' : ''}>Applied</option>
               <option value="interview" ${app.status === 'interview' ? 'selected' : ''}>Interview</option>
               <option value="offer" ${app.status === 'offer' ? 'selected' : ''}>Offer</option>
               <option value="rejected" ${app.status === 'rejected' ? 'selected' : ''}>Archive</option>
             </select>
-            <button class="btn-delete text-slate-600 hover:text-red-400 p-1" title="Delete application">×</button>
+            <button class="btn-delete text-slate-500 hover:text-red-400 p-1 text-sm rounded focus-visible:ring-1 focus-visible:ring-red-400" aria-label="Delete job from pipeline" title="Remove from pipeline">×</button>
           </div>
         </div>
       `;
 
-      // Event listener: Status move
+      // Event listener: Status Dropdown Move
       const moveSelect = card.querySelector('.select-move');
       moveSelect.addEventListener('change', async (e) => {
         const newStatus = e.target.value;
-        try {
-          const res = await fetch(`/api/v1/applications/${app.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus })
-          });
-          if (res.ok) {
-            app.status = newStatus;
-            showToast(`Moved to ${newStatus.toUpperCase()}`);
-            renderKanban(allApplications);
-            updateStats();
-          }
-        } catch (err) {
-          console.error(err);
-        }
+        await moveApplication(app.id, newStatus);
       });
 
       // Event listener: AI Pitch modal
@@ -641,7 +786,7 @@
           if (res.ok) {
             allApplications = allApplications.filter(a => a.id !== app.id);
             showToast('Application removed');
-            renderKanban(allApplications);
+            renderKanban();
             updateStats();
           }
         } catch (err) {
@@ -652,18 +797,70 @@
       return card;
     }
 
-    // Update Stats counters
+    // Move application to a new Kanban stage
+    async function moveApplication(appId, newStatus) {
+      try {
+        const res = await fetch(`/api/v1/applications/${appId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+          const item = allApplications.find(a => a.id === appId);
+          if (item) item.status = newStatus;
+          showToast(`Moved to ${newStatus.toUpperCase()}`);
+          renderKanban();
+          updateStats();
+        }
+      } catch (err) {
+        console.error('Error moving application:', err);
+      }
+    }
+
+    // Drag & Drop Handlers
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const col = e.currentTarget;
+      col.classList.add('column-drag-hover');
+    }
+
+    function handleDragLeave(e) {
+      const col = e.currentTarget;
+      col.classList.remove('column-drag-hover');
+    }
+
+    async function handleDrop(e, targetStatus) {
+      e.preventDefault();
+      const col = e.currentTarget;
+      col.classList.remove('column-drag-hover');
+      const appId = parseInt(e.dataTransfer.getData('text/plain') || draggedAppId);
+      if (appId) {
+        await moveApplication(appId, targetStatus);
+      }
+    }
+
+    // Update Stats counters & average score
     async function updateStats() {
       if (!currentUser) return;
       try {
         const res = await fetch(`/api/v1/applications/pipeline-stats?user_id=${currentUser.id}`);
         if (!res.ok) return;
         const stats = await res.json();
+        
         document.getElementById('stat-total').textContent = stats.total;
-        document.getElementById('stat-saved').textContent = stats.saved;
-        document.getElementById('stat-applied').textContent = stats.applied;
-        document.getElementById('stat-interview').textContent = stats.interview;
-        document.getElementById('stat-offer').textContent = stats.offer;
+        document.getElementById('stat-saved-sub').textContent = `${stats.saved} in Review Queue`;
+        document.getElementById('stat-active-pipeline').textContent = stats.applied;
+        document.getElementById('stat-interview-offer').textContent = stats.interview + stats.offer;
+
+        // Calculate Average Match Score
+        if (allApplications.length > 0) {
+          const totalScore = allApplications.reduce((acc, a) => acc + (a.match_score || 0), 0);
+          const avg = Math.round(totalScore / allApplications.length);
+          document.getElementById('stat-avg-score').textContent = `${avg}%`;
+        } else {
+          document.getElementById('stat-avg-score').textContent = '--';
+        }
       } catch (err) {
         console.error('Error fetching pipeline stats:', err);
       }
@@ -673,7 +870,7 @@
     function openPitchModal(app) {
       const job = app.job || {};
       document.getElementById('pitch-modal-title').textContent = job.title || 'Role';
-      document.getElementById('pitch-modal-company').textContent = (job.company || '') + ' • ' + (job.location || '');
+      document.getElementById('pitch-modal-company').textContent = (job.company || '') + ' • ' + sanitizeLocation(job.location);
       document.getElementById('pitch-modal-pitch').textContent = app.quick_pitch || 'Custom pitch available upon scraping.';
       document.getElementById('pitch-modal-linkedin').textContent = app.outreach_linkedin || 'Hi [Hiring Manager], noticed the opening for ' + (job.title || 'this role') + ' and wanted to connect.';
       document.getElementById('pitch-modal-email').textContent = app.outreach_email || 'Subject: Application for ' + (job.title || 'Software Engineer');
@@ -701,6 +898,34 @@
     document.getElementById('btn-open-scan').addEventListener('click', () => scanModal.classList.remove('hidden'));
     document.getElementById('btn-close-scan-modal').addEventListener('click', () => scanModal.classList.add('hidden'));
     document.getElementById('btn-cancel-scan-modal').addEventListener('click', () => scanModal.classList.add('hidden'));
+
+    // System Status Popover Toggle
+    const statusBtn = document.getElementById('btn-toggle-status');
+    const statusPopover = document.getElementById('popover-status');
+    statusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      statusPopover.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => {
+      if (!statusPopover.classList.contains('hidden')) {
+        statusPopover.classList.add('hidden');
+      }
+    });
+
+    // Toggle Collapsible Archived Drawer
+    const btnToggleArchived = document.getElementById('btn-toggle-archived');
+    const drawerArchived = document.getElementById('drawer-archived');
+    const archivedIcon = document.getElementById('archived-toggle-icon');
+    btnToggleArchived.addEventListener('click', () => {
+      const isHidden = drawerArchived.classList.contains('hidden');
+      if (isHidden) {
+        drawerArchived.classList.remove('hidden');
+        archivedIcon.textContent = '▲ Hide';
+      } else {
+        drawerArchived.classList.add('hidden');
+        archivedIcon.textContent = '▼ Show';
+      }
+    });
 
     // Submit Background Scan Task
     document.getElementById('btn-submit-scan').addEventListener('click', async () => {
@@ -835,8 +1060,10 @@
 
         if (res.ok) {
           showToast('Profile updated successfully!');
-          document.getElementById('stat-min-match').textContent = minScore + '%';
+          document.getElementById('slider-min-score').value = minScore;
+          document.getElementById('slider-min-score-val').textContent = minScore + '%';
           profModal.classList.add('hidden');
+          renderKanban();
         }
       } catch (err) {
         console.error(err);
@@ -845,8 +1072,19 @@
     });
 
     // Search and Filter Listeners
-    document.getElementById('input-search').addEventListener('input', () => renderKanban(allApplications));
-    document.getElementById('select-platform').addEventListener('change', () => renderKanban(allApplications));
+    document.getElementById('input-search').addEventListener('input', renderKanban);
+    document.getElementById('select-setup').addEventListener('change', renderKanban);
+    document.getElementById('select-platform').addEventListener('change', renderKanban);
+    document.getElementById('select-sort').addEventListener('change', renderKanban);
+    
+    // Live Min Score Slider Listener
+    const scoreSlider = document.getElementById('slider-min-score');
+    const scoreSliderVal = document.getElementById('slider-min-score-val');
+    scoreSlider.addEventListener('input', (e) => {
+      scoreSliderVal.textContent = e.target.value + '%';
+      renderKanban();
+    });
+
     document.getElementById('btn-refresh-board').addEventListener('click', () => {
       showToast('Refreshing pipeline...');
       loadBoard();

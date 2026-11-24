@@ -8,6 +8,15 @@ from config import DEFAULT_PLATFORMS
 
 logger = logging.getLogger(__name__)
 
+def clean_location(loc: str) -> str:
+    """Sanitizes location strings by stripping Indeed administrative region codes (P00, 00)"""
+    if not loc:
+        return "Philippines"
+    cleaned = re.sub(r'\b(P00|00|PH-00|PH-P00)\b', '', loc, flags=re.IGNORECASE)
+    cleaned = re.sub(r',\s*,+', ',', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip(' ,')
+    return cleaned or "Philippines"
+
 def make_job_id(site: str, title: str, company: str, url: str) -> str:
     """Generates a stable unique hash identifier for deduplication"""
     raw = f"{site.lower()}:{company.lower()}:{title.lower()}:{url}"
@@ -68,7 +77,7 @@ def scrape_with_jobspy(search_term: str, location: str = "Philippines", results_
                     "site": site,
                     "title": title,
                     "company": company,
-                    "location": str(row.get("location", location)),
+                    "location": clean_location(str(row.get("location", location))),
                     "date_posted": str(row.get("date_posted", "Recent")),
                     "job_url": job_url,
                     "description": str(row.get("description", ""))

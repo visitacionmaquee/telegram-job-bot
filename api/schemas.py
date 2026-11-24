@@ -60,6 +60,8 @@ class JobBase(BaseModel):
     source: str
     url: str
     date_posted: Optional[str] = "Recent"
+    work_setup: Optional[str] = "On-site"
+    salary: Optional[str] = None
     description: Optional[str] = None
 
 class JobCreate(JobBase):
@@ -75,6 +77,8 @@ class ApplicationBase(BaseModel):
     job_id: str
     status: Optional[str] = "saved"
     match_score: Optional[int] = 0
+    matched_skills: Optional[List[str]] = Field(default_factory=list)
+    missing_skills: Optional[List[str]] = Field(default_factory=list)
     highlight_project: Optional[str] = None
     quick_pitch: Optional[str] = None
     outreach_linkedin: Optional[str] = None

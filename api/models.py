@@ -47,6 +47,8 @@ class Job(Base):
     source = Column(String(64), index=True, nullable=False) # linkedin, indeed, glassdoor
     url = Column(Text, nullable=False)
     date_posted = Column(String(64), default="Recent")
+    work_setup = Column(String(64), default="On-site")
+    salary = Column(String(128), nullable=True)
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -60,6 +62,8 @@ class Application(Base):
     job_id = Column(String(64), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True)
     status = Column(String(32), default="saved", index=True) # saved, applied, interview, offer, rejected
     match_score = Column(Integer, default=0)
+    matched_skills = Column(JSON, default=list)
+    missing_skills = Column(JSON, default=list)
     highlight_project = Column(String(255), nullable=True)
     quick_pitch = Column(Text, nullable=True)
     outreach_linkedin = Column(Text, nullable=True)

@@ -52,6 +52,8 @@ def create_application(
         job_id=app_in.job_id,
         status=app_in.status or "saved",
         match_score=app_in.match_score or 0,
+        matched_skills=app_in.matched_skills or [],
+        missing_skills=app_in.missing_skills or [],
         highlight_project=app_in.highlight_project,
         quick_pitch=app_in.quick_pitch,
         outreach_linkedin=app_in.outreach_linkedin,

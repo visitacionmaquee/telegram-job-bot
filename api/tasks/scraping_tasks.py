@@ -102,22 +102,25 @@ def async_scrape_and_match(
                 src_name = raw.get("site", "linkedin")
                 JOBS_SCRAPED_TOTAL.labels(source=src_name).inc()
 
+                # Evaluate AI match
+                evaluated = evaluate_job_match(raw, candidate_profile)
+
                 existing_job = db.query(models.Job).filter(models.Job.id == job_id).first()
                 if not existing_job:
                     new_job = models.Job(
                         id=job_id,
                         title=raw.get("title", ""),
                         company=raw.get("company", ""),
-                        location=raw.get("location", target_location),
+                        location=evaluated.get("location") if evaluated else raw.get("location", target_location),
                         source=src_name,
                         url=raw.get("job_url", ""),
                         date_posted=str(raw.get("date_posted", "Recent")),
+                        work_setup=evaluated.get("work_setup", "On-site") if evaluated else "On-site",
+                        salary=evaluated.get("salary") if evaluated else None,
                         description=raw.get("description", "")
                     )
                     db.add(new_job)
 
-                # Evaluate AI match
-                evaluated = evaluate_job_match(raw, candidate_profile)
                 if evaluated:
                     min_threshold = candidate_profile.get("min_match_percent", 65) if candidate_profile else 65
                     score = evaluated["match_score"]
@@ -148,6 +151,8 @@ def async_scrape_and_match(
                             job_id=j_id,
                             status="saved",
                             match_score=m.get("match_score", 0),
+                            matched_skills=m.get("matched_skills", []),
+                            missing_skills=m.get("missing_skills", []),
                             highlight_project=m.get("highlight_project"),
                             quick_pitch=m.get("quick_pitch"),
                             outreach_linkedin=m.get("outreach_linkedin"),

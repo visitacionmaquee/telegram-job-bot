@@ -55,3 +55,30 @@ def test_evaluate_job_match_entry_level_success():
     assert evaluated["badge"] in ["🟢", "🟡"]
     assert "Velocity" in evaluated["highlight_project"] or "Engineering" in evaluated["highlight_project"]
     assert len(evaluated["outreach_linkedin"]) <= 300 # Fits LinkedIn limit
+
+def test_clean_location_removes_p00():
+    from api.services.matcher_service import clean_location
+    assert clean_location("Quezon City, P00, Philippines") == "Quezon City, Philippines"
+    assert clean_location("Taguig, P00, Philippines") == "Taguig, Philippines"
+    assert clean_location("P00, Philippines") == "Philippines"
+
+def test_game_developer_gap_penalization():
+    job = {
+        "id": "game_1",
+        "title": "Junior Game Developer",
+        "company": "Gaming Studio",
+        "location": "Quezon City, P00, Philippines",
+        "date_posted": "Recent",
+        "description": "Looking for Unity, C#, 3D Game Physics developers."
+    }
+    evaluated = evaluate_job_match(job)
+    assert evaluated is not None
+    assert evaluated["match_score"] < 65
+    assert "Unity" in evaluated["missing_skills"]
+    assert "P00" not in evaluated["location"]
+
+def test_detect_work_setup():
+    from api.services.matcher_service import detect_work_setup
+    assert detect_work_setup("Software Engineer", "Full remote work from home", "Manila") == "Remote"
+    assert detect_work_setup("QA Engineer", "Hybrid work setup 2 days office", "Taguig") == "Hybrid"
+    assert detect_work_setup("Backend Developer", "Office based daily", "Makati") == "On-site"
