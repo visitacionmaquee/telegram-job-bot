@@ -116,6 +116,39 @@ services:
     networks:
       - jobradar_internal
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: jobradar_prometheus
+    restart: always
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - api
+    networks:
+      - jobradar_internal
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: jobradar_grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards/json:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - jobradar_internal
+
 networks:
   jobradar_internal:
     driver: bridge
@@ -124,3 +157,4 @@ volumes:
   pgdata:
   certbot_conf:
   certbot_www:
+  grafana_data:

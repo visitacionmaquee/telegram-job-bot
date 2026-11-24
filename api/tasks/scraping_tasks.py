@@ -6,6 +6,10 @@ from api.celery_app import celery_app
 from api.database import SessionLocal
 from api import models
 from api.services.matcher_service import evaluate_job_match
+from api.metrics import (
+    JOBS_SCRAPED_TOTAL, JOBS_MATCHED_TOTAL,
+    MATCH_SCORE_HISTOGRAM, ASYNC_TASKS_TOTAL
+)
 from scraper import fetch_jobs
 from config import DEFAULT_ROLES, DEFAULT_LOCATION
 
@@ -95,6 +99,9 @@ def async_scrape_and_match(
                 seen_ids.add(job_id)
 
                 # Persist job if new
+                src_name = raw.get("site", "linkedin")
+                JOBS_SCRAPED_TOTAL.labels(source=src_name).inc()
+
                 existing_job = db.query(models.Job).filter(models.Job.id == job_id).first()
                 if not existing_job:
                     new_job = models.Job(
@@ -102,7 +109,7 @@ def async_scrape_and_match(
                         title=raw.get("title", ""),
                         company=raw.get("company", ""),
                         location=raw.get("location", target_location),
-                        source=raw.get("site", "linkedin"),
+                        source=src_name,
                         url=raw.get("job_url", ""),
                         date_posted=str(raw.get("date_posted", "Recent")),
                         description=raw.get("description", "")
@@ -113,8 +120,12 @@ def async_scrape_and_match(
                 evaluated = evaluate_job_match(raw, candidate_profile)
                 if evaluated:
                     min_threshold = candidate_profile.get("min_match_percent", 65) if candidate_profile else 65
-                    if evaluated["match_score"] >= min_threshold:
+                    score = evaluated["match_score"]
+                    MATCH_SCORE_HISTOGRAM.observe(score)
+                    if score >= min_threshold:
                         matched_results.append(evaluated)
+                        tier = "high" if score >= 80 else "medium"
+                        JOBS_MATCHED_TOTAL.labels(role=r, quality_tier=tier).inc()
 
         db.commit()
 
@@ -155,6 +166,7 @@ def async_scrape_and_match(
             except Exception as e:
                 logger.warning(f"Telegram dispatch error in worker: {e}")
 
+        ASYNC_TASKS_TOTAL.labels(task_name="async_scrape_and_match", status="SUCCESS").inc()
         return {
             "status": "SUCCESS",
             "total_scraped": total_scraped,
@@ -165,6 +177,7 @@ def async_scrape_and_match(
     except Exception as exc:
         db.rollback()
         logger.error(f"Worker task failed: {exc}")
+        ASYNC_TASKS_TOTAL.labels(task_name="async_scrape_and_match", status="FAILURE").inc()
         raise exc
     finally:
         db.close()

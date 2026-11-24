@@ -1,0 +1,129 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Total Jobs Scraped",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(jobradar_jobs_scraped_total) or vector(0)", "legendFormat": "Scraped Jobs", "refId": "A" }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "AI Matched Jobs",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(jobradar_jobs_matched_total) or vector(0)", "legendFormat": "Top Matches", "refId": "A" }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "title": "API Request Volume",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(jobradar_http_requests_total) or vector(0)", "legendFormat": "HTTP Requests", "refId": "A" }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "title": "Async Tasks Completed",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(jobradar_celery_tasks_total{status=\"SUCCESS\"}) or vector(0)", "legendFormat": "Celery Success", "refId": "A" }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "title": "HTTP Request Throughput (req/sec)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(jobradar_http_requests_total[1m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "title": "Scraping Throughput by Job Board",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(jobradar_jobs_scraped_total[5m])) by (source)", "legendFormat": "{{source}}", "refId": "A" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "id": 7,
+      "title": "95th Percentile API Latency (p95)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(jobradar_http_request_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95 Latency (s)", "refId": "A" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "id": 8,
+      "title": "Celery Worker Task Execution Velocity",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(jobradar_celery_tasks_total[5m])) by (status)", "legendFormat": "{{status}}", "refId": "A" }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["jobradar", "fastapi", "celery", "telemetry"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "timezone": "browser",
+  "title": "JobRadar AI — SaaS Telemetry & AI Observability",
+  "uid": "jobradar-telemetry"
+}
